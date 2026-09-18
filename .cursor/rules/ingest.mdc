@@ -1,0 +1,16 @@
+---
+description: Athlete file upload is first-class ingest, not a COROS-only path
+alwaysApply: true
+---
+
+# Ingest
+
+COROS sync and athlete file upload are live. Garmin and Polar are not.
+
+File upload is a first-class intelligence source, not a COROS helper:
+
+- One `.fit`, `.gpx`, or `.tcx`
+- A zip of those files
+- Any watch or export — do not require a vendor connection
+
+POST `/api/integrations/fit/upload` with form field `files`. Vendor sync may also download FIT internally. That does not replace athlete upload.

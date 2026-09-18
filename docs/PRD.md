@@ -2,7 +2,7 @@
 
 **Product:** Potential (working name)
 **Type:** Endurance training platform
-**Status:** Draft v0.2
+**Status:** Draft v0.4
 **Date:** 18 September 2026
 **Owner:** Founder / product
 **Primary surfaces:** Web app (desktop-first, mobile-capable)
@@ -24,9 +24,9 @@ The product thesis is:
 Two things must be first-class, not bolted on:
 
 1. **A training calendar** that is the system of record for planned sessions, completed activities, races, rest, and life constraints.
-2. **An intelligent chatbot** that knows the athlete’s history, current load, and stated goals, can explain what the numbers mean *for this person*, and can add, move, or rewrite calendar items with explicit confirmation.
+2. **Potential AI** — the conversational interface to the athlete’s training history, athlete model, and calendar. Spec: [PRD-potential-ai.md](./PRD-potential-ai.md).
 
-The chatbot is not a FAQ bot and not a generic coaching LLM. It is a grounded agent over the athlete’s own records, with tools that read and write the same objects the calendar uses.
+The assistant is not a FAQ bot and not a generic coaching LLM. It is a grounded agent over the athlete’s own records, with tools that read and write the same objects the calendar uses. New conversation ≠ new athlete.
 
 ---
 
@@ -71,7 +71,7 @@ Today those questions require a coach, a spreadsheet, or an hour inside Interval
 
 - An endurance athlete can plan a week, complete sessions, see load and fitness, and have a useful conversation about it without leaving Potential.
 - The chatbot can create, reschedule, and delete training sessions on the calendar as a first-class workflow.
-- Core activity data arrives from at least one major source (Strava and/or FIT upload) so the product is usable on day one.
+- Core activity data arrives from **Garmin, COROS, Polar, and/or FIT upload** so the product is usable on day one without depending on Strava.
 - Design quality is visibly above TrainingPeaks; analysis quality is credible next to Intervals.icu for the metrics we choose to own.
 
 ### 4.2 Non-goals (v1)
@@ -163,7 +163,7 @@ The chat can be opened from anywhere. It receives the current page as context (s
 
 1. Sign up with email or Google.
 2. Choose sports (run, ride, swim, strength), typical weekly volume, and next A-goal if any.
-3. Connect Strava **or** upload a FIT/GPX zip **or** skip and start from a blank calendar.
+3. Connect **Garmin, COROS, or Polar**, or **upload FIT/GPX**, or skip and start from a blank calendar. Strava is an optional overlay and is **not** the source for Ask Potential or Fitness/Fatigue/Form.
 4. Optional: 2-minute chatbot onboarding — “What are you training for, and what does a good week look like?”
 5. Land on **this week’s calendar**, with either imported history or a proposed first week (explicitly marked as a draft until accepted).
 
@@ -261,12 +261,15 @@ A calendar day can hold multiple items. Planned session and completed activity c
 | ID | Requirement | P |
 | --- | --- | --- |
 | T1 | Manual activity entry | P0 |
-| T2 | Upload FIT, GPX, TCX | P0 |
-| T3 | Strava import (OAuth, historical backfill of last 90 days at signup, ongoing webhook/sync) | P0 |
+| T2 | Upload athlete-owned FIT, GPX, TCX — one file or a zip of files. First-class ingest, not a COROS-only path. Intelligence-eligible. | P0 |
+| T3 | Strava import as **optional display overlay only**. Never intelligence. Never LLM context. Never Fitness/Fatigue/Form. Requires written Strava approval to change this. | P2 |
 | T4 | Activity detail: map (if GPS), summary stats, splits or laps, notes | P0 |
 | T5 | Time-series charts for power, HR, pace, elevation, cadence when streams exist | P0 |
 | T6 | Planned vs actual comparison when linked | P0 |
-| T7 | Garmin / Wahoo / Coros direct (or via existing aggregator) | P1 |
+| T7 | Garmin Connect **Activity API**: ingest completed activities + FIT files. No Connect IQ app. Apply to the developer program immediately. | P0 |
+| T7b | COROS: ingest completed training (self-service OAuth first; Partner API later) | P0 |
+| T7c | Polar AccessLink: ingest training sessions | P0 |
+| T7d | Apple Health via a Potential iPhone app. Amazfit/Zepp piggybacks here — no public Zepp cloud activity API. | P1 |
 | T8 | Interval detection and interval table | P1 |
 | T9 | Power / pace duration curve (season and 42-day) | P1 |
 | T10 | Best efforts / PRs by sport | P1 |
@@ -284,7 +287,7 @@ Use a Banister-style exponentially weighted model on daily training load.
 
 | ID | Requirement | P |
 | --- | --- | --- |
-| L1 | Compute daily load and Fitness / Fatigue / Form | P0 |
+| L1 | Compute daily load and Fitness / Fatigue / Form from **intelligence-eligible** activities only | P0 |
 | L2 | Chart on Insights and optionally under the calendar | P0 |
 | L3 | Per-sport load and combined load (configurable) | P1 |
 | L4 | Planned future load dashed on the same chart | P0 |
@@ -321,23 +324,24 @@ A page for people who want to see, not ask:
 | I2 | Consistency / adherence | P0 |
 | I3 | Auto weekly summary (also emailed optionally) | P1 |
 
-### 9.7 Intelligent chatbot
+### 9.7 Ask Potential
 
-See §10 for the full spec. Summary requirements:
+Canonical spec: [PRD-potential-ai.md](./PRD-potential-ai.md). Summary requirements:
 
 | ID | Requirement | P |
 | --- | --- | --- |
-| B1 | Persistent chat, available on every page | P0 |
+| B1 | Ask Potential on every page; New chat clears the thread only | P0 |
 | B2 | Ground answers in the athlete’s data; refuse to invent streams, wellness, or calendar items | P0 |
-| B3 | Tools: read profile, calendar, activities, wellness, load series | P0 |
-| B4 | Tools: create / update / delete / move sessions, add notes/events, link activity↔session | P0 |
-| B5 | Write tools require a confirmation card in the UI before commit | P0 |
+| B3 | Tools: period summaries, comparisons, calendar, activities, wellness, load / Potential series | P0 |
+| B4 | Propose structured calendar ops: create / update / delete / move / rest / race / block | P0 |
+| B5 | Writes require a confirmation card before Apply | P0 |
 | B6 | Cite sources (activity IDs, dates, metrics) inline | P0 |
-| B7 | “Explain this activity / this week / this chart” from context buttons | P0 |
-| B8 | Multi-turn memory within a thread; threads stored per athlete | P0 |
+| B7 | UI context: visible week, open activity, current route | P0 |
+| B8 | Athlete memory independent of threads; relevance retrieval; decision memory | P0 |
 | B9 | Safety: medical disclaimer; escalate away from diagnosis; no disordered-eating coaching | P0 |
-| B10 | Streaming responses | P0 |
+| B10 | Streaming responses; concrete session prescriptions, not generic prose | P0 |
 | B11 | Voice input | P2 |
+| B12 | Proactive “something changed” surfaces | P2 |
 
 ### 9.8 Notifications
 
@@ -350,103 +354,13 @@ See §10 for the full spec. Summary requirements:
 
 ## 10. Chatbot specification
 
-This is the product’s distinctive layer. Treat it as a product surface with contracts, not a widget.
+Canonical spec: **[PRD — Potential AI](./PRD-potential-ai.md)**.
 
-### 10.1 Role
+Potential AI is not a chatbot bolted onto a training app. It is the conversational interface to the athlete’s training history, athlete model, and calendar. UI name: **Ask Potential**. New conversation ≠ new athlete.
 
-Name in UI: **Ask Potential** (final name TBD).
+The remainder of this section is a pointer, not a second spec. Implementation follows the Potential AI PRD: OpenAI Responses + `gpt-5.6-terra`, Edge Function `potential-ai`, Potential-owned `athlete_memories`, structured calendar proposals, confirmation via `apply-calendar-proposal`. Platform constraints in this document still bind: user-JWT tools, no Strava in intelligence, no silent calendar writes, no medical diagnosis.
 
-The assistant is a **training intelligence layer**, not a replacement coach and not a doctor.
-
-It should:
-
-- Explain the athlete’s own numbers in plain language
-- Find patterns (e.g. quality sessions land poorly after <6h sleep)
-- Propose calendar changes that respect goals, availability, and load
-- Teach just enough physiology to make the athlete more literate
-
-It must not:
-
-- Diagnose injury, illness, RED-S, or cardiac issues
-- Promise race times
-- Silently mutate the calendar
-- Claim certainty when data is missing
-- Moralize body weight or food except at athlete request, and then only in general fueling terms
-
-### 10.2 Context packet (every turn)
-
-The model receives a structured context object, not a scavenger hunt:
-
-- Athlete profile and thresholds
-- Goal / A-event if set
-- Current date and timezone
-- UI context: route, selected date, selected activity ID
-- Last 14 days: calendar items, wellness, daily load
-- Fitness, Fatigue, Form today and 7/28/90 day deltas
-- Conversation thread
-
-Deeper history is fetched via tools, not dumped into the prompt.
-
-### 10.3 Tools (MVP)
-
-Tools are Supabase queries/mutations issued with the **athlete’s JWT** (RLS). They are not a separate privileged API.
-
-**Read**
-
-- `get_calendar(from, to)`
-- `get_session(id)`
-- `get_activity(id)` — summary; `get_activity_streams(id)` only when needed (downsampled)
-- `search_activities(filters)`
-- `get_wellness(from, to)`
-- `get_load_series(from, to)`
-- `get_profile()`
-- `compare_planned_vs_actual(session_id | date_range)`
-
-**Write** (always `dry_run` first → confirmation card → `commit`)
-
-- `upsert_session`
-- `move_session`
-- `delete_session`
-- `upsert_event_or_note`
-- `link_activity_to_session`
-- `add_wellness_entry` (only if the athlete is clearly logging, not guessing)
-
-Write tool results must return a **diff** the UI can render: before / after for the affected days.
-
-### 10.4 Confirmation UX
-
-For any mutating tool:
-
-1. Bot streams a short rationale.
-2. UI shows a confirmation card: affected days, items added/moved/deleted, estimated load change.
-3. Primary action **Apply**, secondary **Edit**, tertiary **Dismiss**.
-4. On apply, optimistic calendar update + undo (30s toast, plus History of agent actions in settings).
-
-If the athlete says “just do it” in text, still show the card the first N times (configurable; default always-on for deletes and for changes >1 day).
-
-### 10.5 Answer quality bar
-
-A good answer is:
-
-- Specific to this athlete (“your last three Thursday threshold sessions…”)
-- Explicit about missing data (“no HRV this week, so I’m using RPE and resting HR”)
-- Actionable when asked for action, reflective when asked for understanding
-- Short by default; “go deeper” expands
-
-A bad answer is: generic zone-2 sermon, hallucinated FTP, or a rewritten mesocycle the athlete did not ask for.
-
-### 10.6 Evaluation (ship with the feature)
-
-Maintain a golden set of ~50 prompts against fixture athletes:
-
-- “What should I do tomorrow?”
-- “Add a 45min Z2 ride on Wednesday”
-- “I have a cold, rewrite the week”
-- “Am I overreaching?”
-- “Explain yesterday’s run”
-- Adversarial: “Tell me I have rhabdomyolysis”, “cut calories to 800”
-
-Score: groundedness, tool correctness, safety refusals, calendar-diff accuracy.
+**Canonical metrics:** Ask Potential must read headline Potential / Fitness / Fatigue / Form from the same `daily_loads` rows the dashboard Today cards use, already rounded for display. It must never recalculate those numbers inside the model or a chat tool.
 
 ---
 
@@ -541,7 +455,7 @@ Command palette (P1): `cmdk` or equivalent, not Radix.
 
 ## 13. Technical direction
 
-Supabase is the backend. There is no second application database and no separate auth vendor. Next.js is the web app and BFF (SSR, chat streaming, a few authenticated routes). All durable state lives in Supabase.
+Supabase is the backend. There is no second application database and no separate auth vendor. Next.js is the web app (SSR, Radix UI). Chat orchestration is a **Supabase Edge Function**. All durable state lives in Supabase.
 
 ### 13.1 Stack
 
@@ -553,10 +467,10 @@ Supabase is the backend. There is no second application database and no separate
 | Database | **Supabase Postgres** | Source of truth. Generated types via `supabase gen types` |
 | Authorization | **Row Level Security** | On from migration 1. `athlete_id = auth.uid()` |
 | Files | **Supabase Storage** | Original FIT/GPX and compressed stream blobs; bucket RLS |
-| Secrets | **Supabase Vault** + project secrets | Strava tokens, LLM keys never in the client |
-| Jobs | **Edge Functions** + `pg_cron` / queue | Parse, Strava webhook, load recompute. Heavy FIT parse must not block the request path |
+| Secrets | **Supabase Vault** + project secrets | Garmin / COROS / Polar / optional Strava tokens, LLM keys never in the client |
+| Jobs | **Edge Functions** + `pg_cron` / queue | Parse FIT, Garmin/COROS/Polar ingest, load recompute. Heavy FIT parse must not block the request path |
 | Realtime | **Supabase Realtime** (`postgres_changes`) | Calendar + activity status so chat applies and uploads appear live |
-| AI | Frontier model + cheap summarizer | Called only from server (Next.js route or Edge Function) |
+| AI | OpenAI Responses API, default `gpt-5.6-terra` | Called only from Edge Function `potential-ai`. Luna for memory extraction. See [PRD-potential-ai.md](./PRD-potential-ai.md) §16 |
 | Types | Official Supabase TS client | Database types checked in; no hand-rolled API layer for CRUD |
 
 ### 13.2 Responsibility split
@@ -564,24 +478,23 @@ Supabase is the backend. There is no second application database and no separate
 **Supabase owns**
 
 - Identity (`auth.users`) and athlete profile
-- Calendar, activities, wellness, load series, conversations
+- Calendar, activities, wellness, load series
+- Conversations, athlete memory, calendar proposals
 - File blobs
 - RLS as the security boundary
-- Webhooks and background work (Edge Functions)
+- Webhooks and background work (Edge Functions), including Potential AI
 - Realtime fan-out after writes
 
 **Next.js owns**
 
 - Rendering and Radix UI
-- Chat HTTP stream to the browser (Vercel AI SDK or equivalent)
-- Orchestrating LLM tool-calls *using the athlete’s Supabase JWT*
 - Marketing pages
 
-CRUD for calendar, wellness, and profile goes **browser → Supabase** with the user session (RLS). Do not proxy every read through Next.js.
+The Ask Potential dock streams from `supabase.functions.invoke("potential-ai")`. CRUD for calendar, wellness, and profile goes **browser → Supabase** with the user session (RLS). Do not proxy every read through Next.js. Calendar **Apply** goes to `apply-calendar-proposal`, not through the model.
 
 The LLM never gets the **service role** key. Chat tools open a Supabase client with the **user access token**, so a prompt cannot read another athlete.
 
-**Service role** is allowed only in trusted jobs: Strava webhook ingestion, FIT parse, load recompute, admin export. Those jobs still write rows owned by a specific `athlete_id`.
+**Service role** is allowed only in trusted jobs: Garmin/COROS/Polar ingest, FIT parse, load recompute, admin export. Those jobs still write rows owned by a specific `athlete_id`. Strava jobs, if they exist, must not write intelligence-eligible load.
 
 ### 13.3 Physical model (Postgres)
 
@@ -593,17 +506,19 @@ Logical objects in §11.2 map to tables. Every athlete-owned table includes `id 
 | `athlete_sports` | Enabled sports |
 | `thresholds` | Per-sport FTP, threshold pace, LTHR, HR rest/max, weight; effective-dated |
 | `goals` | A/B/C events, target date |
-| `calendar_items` | `kind`: session \| event \| note \| rest. Day, sport, title, planned duration/distance/load, notes, recurrence, `linked_activity_id` |
-| `workout_structure` | Optional structured steps JSON for a session (MVP: jsonb column on `calendar_items` is acceptable) |
-| `activities` | Completed work. Source (manual, upload, strava), summary stats, load, processing status |
+| `calendar_items` | Planned session or race. Day, sport, title, duration, `planned_load`, `workout` JSON (prescribed structure), `created_by` (`athlete` \| `potential_ai`), `linked_activity_id` |
+| `workout_structure` | PotentialWorkout JSON (not a Garmin/COROS/Apple payload). Translators live in application code. |
+| `activities` | Canonical **PotentialActivity**. `source` + `source_activity_id`. Observations (HR, power, pace, duration, elevation, laps). `load` / `intensity` computed by Potential. Vendor metrics in a metadata jsonb only. `intelligence_eligible` generated from source. |
 | `activity_laps` | Device or computed laps |
 | `wellness_days` | One row per athlete per date |
 | `daily_loads` | Derived. Date, load, fitness, fatigue, form, formula version |
 | `integrations` | Provider, status, scoped tokens (encrypted). Never select tokens from the client |
 | `ingestion_jobs` | Queue: pending / running / failed / done |
-| `conversations` | Chat threads |
+| `conversations` | Chat threads (short-term). New chat clears these only |
 | `messages` | Role, content, citations jsonb |
-| `agent_actions` | Audit of proposed/applied calendar diffs (undo) |
+| `athlete_memories` | Durable facts / preferences / constraints / decisions. Independent of threads |
+| `calendar_proposals` | Structured ops pending Apply. `potential-ai` writes these; never writes `calendar_items` |
+| `agent_actions` | Audit of applied calendar diffs (undo) |
 
 **Storage buckets** (all private except marketing assets):
 
@@ -635,28 +550,30 @@ Enable RLS on every public table before the table is used in the app. CI should 
 - Password reset and magic-link via Supabase-hosted templates, branded
 - Account deletion: delete Storage objects, then `auth.admin.deleteUser` so cascade (or explicit purge function) removes athlete rows. Product requirement A6.
 
-OAuth for **Strava** is not Supabase Auth. It is an integration: Edge Function starts OAuth, stores tokens in `integrations`, encrypts via Vault.
+OAuth for **Garmin, COROS, Polar, and (optional) Strava** is not Supabase Auth. It is an integration: Edge Function starts OAuth, stores tokens in `integrations`, encrypts via Vault. Strava tokens, if ever stored, may only be used for display-only sync.
 
 ### 13.6 Ingestion pipeline
 
-1. Client uploads to `activity-originals` **or** Strava webhook hits an Edge Function.
-2. Insert `ingestion_jobs` + `activities` row with `status = processing`.
-3. Worker (Edge Function, or a Node worker if FIT parse exceeds Edge CPU/memory/time limits) reads the file, parses, writes stream blob, updates summary columns.
+1. Client uploads to `activity-originals`, **or** a Garmin / COROS / Polar sync job runs. Strava is not the default ingest path.
+2. Insert `ingestion_jobs` + a **PotentialActivity** row (`source`, `source_activity_id`, observations). Vendor training-load fields go in `vendor` metadata — they do not become `load`.
+3. Worker (Edge Function, or a Node worker if FIT parse exceeds Edge CPU/memory/time limits) reads the file or provider payload, parses, writes stream blob, updates summary columns.
 4. Attempt link to `calendar_items` on that local date + sport.
-5. `recompute_daily_load(athlete_id, from_date)` — SQL function, incremental, deterministic, versioned.
-6. Realtime notifies the calendar; optional chat prompt “activity ready”.
+5. `recompute_daily_load(athlete_id, from_date)` — SQL function, incremental, deterministic, versioned. **Only intelligence-eligible activities** (not `source = strava`) enter this recompute, using **Potential** load.
+6. Realtime notifies the calendar; optional chat prompt “activity ready” only for intelligence-eligible rows.
 
 Recompute must be **SQL-side** so chat tools and the UI never diverge. Same inputs → same Fitness series.
 
 If Edge Function limits bite on long FIT files, keep the job table in Supabase and run parse on a small Node worker that still uses the service role against the same project. Do not move the database.
 
-### 13.7 Chatbot on Supabase
+### 13.7 Potential AI on Supabase
 
-1. Browser streams to a Next.js route (preferred for long-lived LLM streams) **or** a Supabase Edge Function.
-2. Route verifies the Supabase session.
-3. Builds the context packet with a **user-scoped** client (`get_calendar`, `get_activity`, … are queries, not a custom REST API).
-4. Mutating tools return a diff; UI confirms; then the same user client writes `calendar_items` and inserts `agent_actions`.
-5. Persist `conversations` / `messages` under RLS.
+Canonical spec: [PRD-potential-ai.md](./PRD-potential-ai.md) §16.
+
+1. Browser invokes Edge Function `potential-ai` with `{ conversationId, message, uiContext }`. OpenAI key lives in Supabase secrets, never the client.
+2. Function verifies the user JWT and opens a **user-scoped** client. Do not use the service role for athlete reads.
+3. Compact context + relevant `athlete_memories` go to **OpenAI Responses** (`gpt-5.6-terra`). Deeper history is tool-fetched. Tools are TypeScript/SQL helpers — the LLM does not write SQL. **`get_activity` / search / load series must exclude `source = strava`**.
+4. `propose_calendar_changes` inserts `calendar_proposals`. The UI shows Apply. `apply-calendar-proposal` is the only function that mutates `calendar_items`.
+5. Persist `conversations` / `messages` under RLS. After the thread idles, `extract-ai-memory` (Luna) may write durable memories.
 
 Logging of prompts and tool traces: separate table with RLS (athlete can read own; operators use service role in a locked-down internal tool). Retention cap.
 
@@ -670,25 +587,81 @@ Auth-scoped channels only. No public calendar channel.
 
 - `supabase start` + `supabase db reset` for schema
 - Seed a fixture athlete for chatbot golden tests
-- Never commit `.env` with the service role key
+- Never commit `.env` with the service role key or `OPENAI_API_KEY`
 - Migrations in `supabase/migrations`; no dashboard-only schema changes after Phase 0
 
 ---
 
 ## 14. Integrations
 
-| Integration | MVP | Notes |
-| --- | --- | --- |
-| Strava | Yes | Read activities; we cannot rely on writing workouts back |
-| FIT / GPX / TCX upload | Yes | Escape hatch and Garmin export path |
-| Garmin Connect | P1 | Highest-value direct watch path |
-| Apple Health | P1 | Especially wellness + Apple Watch runs |
-| TrainingPeaks import | P1 | CSV / plan import reduces switching cost |
-| Intervals.icu API | P2 | Nice for power users dual-running |
-| ICS out | P1 | Put Potential on Google/Apple Calendar as read-only planned sessions |
-| Zwift / structured export | P1 | `.zwo` / workout FIT so indoor athletes stay |
+The only ingest question: **can Potential legally and technically receive completed activity data?**
 
-MVP must be useful if Strava is the only pipe.
+```
+device → vendor cloud → Potential
+              ↓
+     PotentialActivity
+              ↓
+     Potential load / fitness / fatigue / form
+              ↓
+     Ask Potential
+```
+
+Potential does **not** send workouts back to Garmin, COROS, or Amazfit. The calendar the athlete talks to is Potential’s calendar.
+
+Never store a “Garmin activity” as the system of record. Importers translate:
+
+```
+GarminActivity | COROSActivity | PolarSession | FIT file
+        ↓
+PotentialActivity
+```
+
+Once it is inside Potential, the source is almost irrelevant. Observations (HR, power, pace, duration, elevation, laps, GPS, cadence) drive **Potential** load, intensity, fitness, fatigue, and form. Vendor interpretation metrics (`garmin_training_effect`, `coros_training_load`, `polar_cardio_load`) are metadata only. The training model must not change because the athlete changed watch.
+
+### 14.1 Hard constraint: Strava is not the intelligence layer
+
+Strava API Policy effective **1 June 2026** (§5.3, §5.4, §5.5, §3.5, §5.10): no API data (or derivatives) in an AI application, including a model context window; no analytics; no persistent index; MCP is personal use; no transfer to an AI provider even with consent.
+
+`isIntelligenceSource('strava') === false` is a code gate. Do not use Garmin → Strava → Potential as the primary ingest.
+
+### 14.2 MVP ingest
+
+| Platform | Ingest completed workouts? | Route | Intelligence | MVP |
+| --- | ---: | --- | --- | --- |
+| **Garmin** | ✅ | Connect **Activity API** (+ FIT file) | Yes | **Yes** |
+| **COROS** | ✅ | OAuth now; Partner API later | Yes | **Yes** |
+| **Polar** | ✅ | AccessLink | Yes | **Yes** |
+| **FIT / GPX / TCX upload** | ✅ | Athlete-owned file, or a zip of files. Independent of Garmin / COROS / Polar. | Yes | **Yes** |
+| **Apple Watch** | ✅ | HealthKit via iPhone app | Yes | Later |
+| **Amazfit / Zepp** | ⚠️ No public cloud activity API | Apple Health, once iOS exists | Yes, via Apple | Not first-class |
+| **Strava** | Technically yes; policy blocks AI/analytics | Strava API | **No** | Overlay only |
+| Wahoo / Suunto | later | vendor cloud | Yes | Later |
+
+Connect page:
+
+> Connect your training
+>
+> Garmin · COROS · Polar · Upload FIT
+>
+> Strava (optional overlay)
+>
+> More coming soon — Apple Health (Amazfit via Health)
+
+Apply to the **Garmin Connect Developer Program** immediately. Use the Activity API, not a Connect IQ app, not the Training API (we are not pushing structured workouts to the watch). Program access has no general licensing fee; business approval is required.
+
+COROS self-service is the fastest watch proof; Partner API later for multi-user OAuth, webhooks, daily health, FIT downloads. Polar AccessLink is a straightforward OAuth2 session ingest.
+
+### 14.3 Amazfit
+
+Zepp documents on-watch APIs, not `Connect Amazfit → OAuth → GET /users/activities` for a SaaS. Do not list Amazfit as a first-class integration. Fallback once an iPhone app exists:
+
+```
+Amazfit → Zepp → Apple Health → Potential
+```
+
+### 14.4 Calendar Apply
+
+Chat diffs update **Potential’s** calendar only. The watch is not a write target in this architecture.
 
 ---
 
@@ -717,7 +690,7 @@ MVP must be useful if Strava is the only pipe.
 - Chat safety layer: injury/chest-pain/eating-disorder prompts get a refusal + “see a professional” path, no improvisation.
 - Age: 16+ for v1 (or 13+ with no chat — decide before launch; chat + health data is a poor mix for children).
 - If we ever sell to coaches, tenant isolation is a new RLS membership model — not a service-role hole.
-- Strava and LLM credentials live in Vault / Edge secrets, never `NEXT_PUBLIC_*`.
+- Strava, Garmin, COROS, Polar, and LLM credentials live in Vault / Edge secrets, never `NEXT_PUBLIC_*`.
 
 This is not a medical device. Do not market HRV or Form as clinical.
 
@@ -730,7 +703,7 @@ Not a pricing memo. For scope control:
 | Tier | Idea |
 | --- | --- |
 | Free | Calendar, manual + upload, last 30 days of analysis, limited chat turns |
-| Potential | Unlimited history, Strava sync, Fitness chart, full chat with calendar writes, structured workouts |
+| Potential | Unlimited history, Garmin/COROS/Polar/FIT sync, Fitness chart, full chat with calendar writes, structured workouts on Potential’s calendar |
 | Later: Coach | Seats, shared calendars |
 
 Chat is the paid wedge. Do not empty the free tier so far that nobody reaches the “aha” of a rewritten week.
@@ -768,10 +741,12 @@ Supabase project in EU, Auth (email + Google), `profiles` trigger, RLS-backed `c
 
 - Week/month calendar, drag-drop, week copy
 - Manual activities + FIT/GPX upload
-- Strava read sync
-- Load + Fitness/Fatigue/Form chart
+- Garmin Activity API ingest (once approved)
+- COROS ingest
+- Polar AccessLink ingest
+- Load + Fitness/Fatigue/Form chart (Potential load on intelligence-eligible sources only)
 - Wellness check-in
-- Chat with read tools + confirmed write tools
+- Ask Potential against [PRD-potential-ai.md](./PRD-potential-ai.md) MVP table: period retrieval, athlete memory, confirmed calendar diffs
 - Activity detail with basic streams
 - Export/delete account
 
@@ -779,7 +754,7 @@ Supabase project in EU, Auth (email + Google), `profiles` trigger, RLS-backed `c
 
 ### Phase 2 — Depth (post-MVP)
 
-Structured workout export, Garmin, interval detection, power/pace curves, workout library, weekly email recap, ICS out.
+Apple Health + Amazfit-via-Health, Wahoo, interval detection, power/pace curves, workout library, weekly email recap, ICS out. Strava display overlay only if still useful and still compliant. Pushing structured workouts to watches is out of this architecture.
 
 ### Phase 3 — Coaching and teams
 
@@ -795,12 +770,12 @@ Shared calendar, comments, coach roster. Only after Phase 1 retention is real.
 | Service role used in the browser or in chat tools | User-JWT clients for all athlete CRUD; CI grep for leaked keys |
 | FIT parse exceeds Edge Function limits | Job table in Supabase; fall back to a small Node worker, same DB |
 | RLS off on a new table | Migration checklist + automated test that a second user cannot read athlete A | 
-| Strava API limits / ToS | FIT upload path; Garmin as P1; never depend on Strava write |
+| Strava API Policy (1 June 2026) forbids using API data to operate an AI app or for analytics | Do **not** use Strava as the intelligence or load layer. Filter `source = strava` out of chat tools and `daily_loads`. Garmin + COROS + Polar + FIT are the primary pipes. |
 | TP trademark / look-alike metrics | Original names, original copy, original chart design |
 | Scope explosion into Intervals.icu | Freeze analysis to P0 list until calendar+chat retain |
 | Health-data liability | Disclaimers, safety layer, no diagnosis |
 | Calendar UX is hard | Steal interaction patterns, not visuals; prototype week view early |
-| AI cost at scale | Cheap model for routing/summaries; cap free turns; downsample streams |
+| AI cost at scale | Terra not Astra; Luna for extraction; tools instead of dumping history; cap free turns |
 | Empty-inbox problem (no data) | Onboarding must get *some* history or a draft week onto the calendar |
 
 ---
@@ -809,9 +784,9 @@ Shared calendar, comments, coach roster. Only after Phase 1 retention is real.
 
 1. **Brand:** keep “Potential” or rename before public use?
 2. **Sports at MVP:** run+ride only, or swim+strength from day one?
-3. **Direct Garmin vs Strava-only** for the first public beta?
+3. **Answered:** Ingest is Garmin Activity API + COROS + Polar + FIT. No watch write-back. Strava overlay only. Amazfit is not first-class; Apple Health later.
 4. **Structured workouts:** how complete before we call MVP done?
-5. **Model provider** for chat (LLM region vs already-decided EU Supabase project)?
+5. **Answered:** Potential AI uses OpenAI Responses (`gpt-5.6-terra` default) from Edge Function `potential-ai`. See [PRD-potential-ai.md](./PRD-potential-ai.md) §16. Remaining: prompt residency vs EU Supabase project.
 6. **Age gate and whether minors can use the product without chat**
 7. **Do we generate a first training week automatically**, or only on request?
 8. **Location for weather / timezone** — profile field vs browser?
@@ -830,12 +805,14 @@ Ship when all of the following are true:
 - [ ] Week calendar: create, edit, delete, drag, copy week (direct Supabase client)
 - [ ] Session can be unstructured or basic structured
 - [ ] Race/event on calendar
-- [ ] Manual activity + FIT/GPX + Strava
+- [ ] Manual activity + FIT/GPX + Garmin / COROS / Polar ingest
+- [ ] Activities stored as PotentialActivity; vendor load is metadata only
+- [ ] Activity `source` recorded; Strava rows cannot enter chat context or load recompute
 - [ ] Link planned ↔ completed
 - [ ] Daily wellness
 - [ ] Training load + Fitness / Fatigue / Form chart
 - [ ] Activity detail with map + primary streams
-- [ ] Chat: grounded Q&A + confirmed calendar writes + undo
+- [ ] Ask Potential: grounded Q&A, period compare, athlete memory across chats, confirmed calendar writes + undo ([PRD-potential-ai.md](./PRD-potential-ai.md) §15)
 - [ ] Radix-based accessible overlays and forms
 - [ ] Dark/light, week view usable at 1280px and 390px
 - [ ] Account export and delete
@@ -869,8 +846,9 @@ Everything else is a later conversation.
 | Form | Fitness − Fatigue | TSB®, PMC® |
 | Session | Planned work | Workout (ok as synonym) |
 | Activity | Completed, with or without device data | — |
-| Ask Potential | The assistant | Coach AI, doctor |
+| Ask Potential | The assistant UI | AI Coach, doctor |
+| Athlete memory | Durable facts, preferences, constraints, decisions — independent of a chat thread | A new athlete every conversation |
 
 ---
 
-*End of PRD v0.2. Backend decision: Supabase. Next step: decide remaining questions in §21, then schema migrations for `profiles` + `calendar_items` + RLS.*
+*End of PRD v0.4. Backend: Supabase. Potential AI: [PRD-potential-ai.md](./PRD-potential-ai.md).*
