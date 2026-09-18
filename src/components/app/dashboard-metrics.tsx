@@ -10,6 +10,7 @@ import { useAppUser } from "@/components/app/app-shell";
 import { ThisWeekSummary } from "@/components/app/this-week-summary";
 import { UpcomingSessions } from "@/components/app/upcoming-sessions";
 import { addDaysToKey, dateKeyInZone, formatDayShort } from "@/lib/calendar";
+import { CALENDAR_CHANGED_EVENT } from "@/lib/calendar-event";
 import {
   displayPotential,
   isPotentialCalibration,
@@ -31,6 +32,7 @@ import {
   overnightSleepMinutes,
   rangeFavorable,
   recoveryRange,
+  type RangeStatus,
   type RecoveryObservation,
 } from "@/lib/recovery";
 import { createClient } from "@/lib/supabase/client";
@@ -88,6 +90,15 @@ export function DashboardMetrics() {
   const [calibration, setCalibration] = useState<PotentialCalibration | null>(null);
   const [historyStart, setHistoryStart] = useState<string | null>(null);
   const [range, setRange] = useState<ChartRangeId>("3m");
+  const [reload, setReload] = useState(0);
+
+  useEffect(() => {
+    function onChange() {
+      setReload((value) => value + 1);
+    }
+    window.addEventListener(CALENDAR_CHANGED_EVENT, onChange);
+    return () => window.removeEventListener(CALENDAR_CHANGED_EVENT, onChange);
+  }, []);
 
   useEffect(() => {
     const supabase = createClient();
@@ -156,7 +167,7 @@ export function DashboardMetrics() {
         }
         setRecovery((data as RecoveryObservation[] | null) ?? []);
       });
-  }, [today, user.id]);
+  }, [reload, today, user.id]);
 
   const actual = useMemo(
     () =>

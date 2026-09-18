@@ -40,6 +40,7 @@ export function AskPotential() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
+  const input = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -94,6 +95,12 @@ export function AskPotential() {
   useEffect(() => {
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight });
   }, [messages, open, busy]);
+
+  useEffect(() => {
+    if (open) {
+      input.current?.focus();
+    }
+  }, [open]);
 
   useEffect(() => {
     const pending = [...messages]
@@ -303,54 +310,64 @@ export function AskPotential() {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="home-cta home-cta-sm"
+        className="home-cta home-cta-sm gap-2"
         aria-expanded={open}
         aria-controls="ask-potential"
       >
-        <AskPotentialIcon />
+        <ChatBubbleIcon />
         Ask Ahead
       </button>
       {open ? (
         <div
           id="ask-potential"
-          className="fixed inset-x-3 top-[5.25rem] bottom-3 z-40 flex flex-col overflow-hidden border border-line bg-paper-raised shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:inset-x-auto sm:right-4 sm:w-[24rem]"
+          className="fixed inset-x-3 top-[5.25rem] bottom-3 z-40 flex flex-col overflow-hidden rounded-2xl border border-line bg-paper-raised shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:inset-x-auto sm:right-4 sm:w-[28rem]"
         >
-          <div className="flex items-center justify-between border-b border-line px-4 py-3">
-            <div>
-              <p className="text-xl font-medium tracking-tight text-ink">Ask Ahead</p>
-              <p className="text-[12px] text-muted">I remember you and this calendar.</p>
-            </div>
+          <div className="flex items-center gap-3 border-b border-line px-4 py-3">
+            <span className="flex size-8 items-center justify-center rounded-full bg-[var(--home-cta)] text-[#04140a]">
+              <ChatBubbleIcon />
+            </span>
+            <p className="min-w-0 flex-1 text-[15px] font-medium tracking-tight text-ink">
+              Ask Ahead
+            </p>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="inline-flex h-8 items-center rounded-sm px-2 text-sm text-ink-soft hover:bg-paper-sunken hover:text-ink"
+              className="inline-flex size-8 items-center justify-center rounded-full text-ink-soft hover:bg-paper-sunken hover:text-ink"
+              aria-label="Close Ask Ahead"
             >
-              Close
+              <CloseIcon />
             </button>
           </div>
-          <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+          <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
             {messages.length === 0 ? (
-              <p className="text-sm leading-6 text-ink-soft">
-                Ask about a week, a race, or what to do next. I can read your
-                history and put sessions on the diary — you apply the change.
-              </p>
+              <div className="flex">
+                <div className="max-w-[85%] rounded-2xl rounded-bl-md bg-paper-sunken px-3.5 py-2.5 text-sm leading-6 text-ink-soft">
+                  Ask about a week, a race, or what to do next. I can read your
+                  history and put sessions on the diary — you apply the change.
+                </div>
+              </div>
             ) : (
-              <ul className="grid gap-4">
+              <ul className="grid gap-3">
                 {messages.map((message) => (
-                  <li key={message.id}>
-                    <p className="text-[11px] font-medium tracking-[0.14em] text-muted uppercase">
-                      {message.role === "user" ? "You" : "Ahead"}
-                    </p>
+                  <li
+                    key={message.id}
+                    className={message.role === "user" ? "flex justify-end" : "grid gap-2"}
+                  >
                     {message.content ? (
                       message.role === "assistant" ? (
-                        <ChatMarkdown text={message.content} />
+                        <div className="max-w-[85%] rounded-2xl rounded-bl-md bg-paper-sunken px-3.5 py-2.5">
+                          <ChatMarkdown text={message.content} />
+                        </div>
                       ) : (
-                        <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-ink">
+                        <p className="max-w-[85%] rounded-2xl rounded-br-md bg-[var(--home-cta)] px-3.5 py-2.5 text-sm leading-6 whitespace-pre-wrap text-[#04140a]">
                           {message.content}
                         </p>
                       )
                     ) : busy && message.role === "assistant" ? (
-                      <p className="mt-1 text-sm text-muted" aria-live="polite">
+                      <p
+                        className="max-w-[85%] rounded-2xl rounded-bl-md bg-paper-sunken px-3.5 py-2.5 text-sm text-muted"
+                        aria-live="polite"
+                      >
                         Thinking
                         <span className="ml-0.5 inline-flex w-[1.1em] justify-between tracking-normal" aria-hidden="true">
                           <span className="potential-thinking-dot">.</span>
@@ -388,28 +405,30 @@ export function AskPotential() {
             <label htmlFor="ask-input" className="sr-only">
               Message Ask Ahead
             </label>
-            <textarea
-              id="ask-input"
-              className="min-h-16 w-full resize-none border border-line bg-paper-sunken px-3 py-2 text-sm text-ink placeholder:text-muted"
-              value={draft}
-              onChange={(change) => setDraft(change.target.value)}
-              onKeyDown={(key) => {
-                if (key.key === "Enter" && !key.shiftKey) {
-                  key.preventDefault();
-                  key.currentTarget.form?.requestSubmit();
-                }
-              }}
-              placeholder="How did the last four weeks look?"
-              disabled={busy || !ready}
-            />
-            <div className="mt-2 flex items-center justify-between gap-2">
-              <p className="text-[11px] text-muted">Not a doctor. Not a watch.</p>
+            <div className="flex items-end gap-2">
+              <textarea
+                id="ask-input"
+                ref={input}
+                rows={1}
+                className="max-h-28 min-h-11 flex-1 resize-none rounded-full border border-line bg-paper-sunken px-4 py-2.5 text-sm text-ink placeholder:text-muted"
+                value={draft}
+                onChange={(change) => setDraft(change.target.value)}
+                onKeyDown={(key) => {
+                  if (key.key === "Enter" && !key.shiftKey) {
+                    key.preventDefault();
+                    key.currentTarget.form?.requestSubmit();
+                  }
+                }}
+                placeholder="Ask Ahead…"
+                disabled={busy || !ready}
+              />
               <button
                 type="submit"
-                className="home-cta home-cta-sm disabled:opacity-50"
+                className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[var(--home-cta)] text-[#04140a] disabled:opacity-40"
                 disabled={busy || !ready || !draft.trim()}
+                aria-label="Send"
               >
-                {busy ? "…" : "Send"}
+                <SendIcon />
               </button>
             </div>
           </form>
@@ -521,15 +540,37 @@ function ProposalCard({
   );
 }
 
-function AskPotentialIcon() {
+function ChatBubbleIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
-        d="M8 1.25l1.05 4.2 4.2 1.05-4.2 1.05L8 11.75l-1.05-4.2-4.2-1.05 4.2-1.05z"
-        fill="currentColor"
+        d="M5.5 18.5 4 21l3.2-1.1A8.7 8.7 0 0 0 12 21c4.7 0 8.5-3.4 8.5-7.5S16.7 6 12 6 3.5 9.4 3.5 13.5c0 1.6.6 3.1 1.7 4.3Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
       />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true">
       <path
-        d="M12.75 9.5l.48 1.72 1.72.48-1.72.48-.48 1.72-.48-1.72-1.72-.48 1.72-.48z"
+        d="M3.2 3.2l9.6 9.6M12.8 3.2l-9.6 9.6"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function SendIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <path
+        d="M2.2 8.1 13.4 2.8 8.6 13.8 7.3 9.1z"
         fill="currentColor"
       />
     </svg>

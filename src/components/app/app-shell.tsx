@@ -3,6 +3,7 @@
 import { AccountMenu } from "@/components/app/account-menu";
 import { ActivityModal } from "@/components/app/activity-modal";
 import { AskPotential } from "@/components/app/ask-potential";
+import { SyncMenu } from "@/components/app/sync-menu";
 import { getSession, needsOnboarding, type AuthUser } from "@/lib/auth";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -102,6 +103,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             </nav>
             <div className="ml-auto flex items-center gap-3">
+              <SyncMenu />
               <AskPotential />
               <AccountMenu user={user} />
             </div>

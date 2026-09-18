@@ -101,7 +101,7 @@ function toBlocks(text: string): Block[] {
 export function ChatMarkdown({ text }: { text: string }) {
   const blocks = toBlocks(tidyCitations(text));
   return (
-    <div className="mt-1 grid gap-2 text-sm leading-6 text-ink">
+    <div className="grid gap-2 text-sm leading-6 text-ink">
       {blocks.map((block, index) =>
         block.type === "ul" ? (
           <ul key={index} className="grid list-disc gap-1 pl-4 marker:text-muted">

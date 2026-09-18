@@ -23,18 +23,11 @@ type ActivityLoadRow = {
   sport: string;
   duration_seconds: number | null;
   intelligence_eligible: boolean;
-  activity_metrics:
-    | {
-        potential_load: number | null;
-        training_mix: TrainingMix | null;
-        data_quality: DataQuality | null;
-      }
-    | {
-        potential_load: number | null;
-        training_mix: TrainingMix | null;
-        data_quality: DataQuality | null;
-      }[]
-    | null;
+  activity_metrics: {
+    potential_load: number | null;
+    training_mix: Json;
+    data_quality: string | null;
+  } | null;
 };
 
 type RecoveryRow = {
@@ -74,12 +67,32 @@ function round1(value: number) {
   return Math.round(value * 10) / 10;
 }
 
+function asMix(value: Json): TrainingMix | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+  const row = value as {
+    easy_seconds?: unknown;
+    specific_seconds?: unknown;
+    high_seconds?: unknown;
+  };
+  return {
+    easy_seconds: Number(row.easy_seconds) || 0,
+    specific_seconds: Number(row.specific_seconds) || 0,
+    high_seconds: Number(row.high_seconds) || 0,
+  };
+}
+
 function metricsOf(row: ActivityLoadRow) {
   const value = row.activity_metrics;
-  if (Array.isArray(value)) {
-    return value[0] ?? null;
+  if (!value) {
+    return null;
   }
-  return value;
+  return {
+    potential_load: value.potential_load,
+    training_mix: asMix(value.training_mix),
+    data_quality: value.data_quality,
+  };
 }
 
 function dayQuality(day: DayLoad): DataQuality | null {

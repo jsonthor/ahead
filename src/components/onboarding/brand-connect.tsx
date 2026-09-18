@@ -37,7 +37,6 @@ export function BrandConnect({ onLeave, returnTo = "/onboarding" }: Props) {
 
   const primary = providersIn("primary");
   const optional = providersIn("optional");
-  const later = providersIn("later");
 
   async function uploadFiles(fileList: File[]) {
     if (fileList.length === 0 || busy) {
@@ -177,11 +176,6 @@ export function BrandConnect({ onLeave, returnTo = "/onboarding" }: Props) {
           COROS didn’t connect. Try again from this page.
         </p>
       ) : null}
-
-      <p className="mt-8 text-[13px] leading-5 text-muted">
-        {later.map((provider) => provider.name).join(" · ")} later. Amazfit
-        can arrive through Apple Health.
-      </p>
     </div>
   );
 }

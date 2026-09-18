@@ -140,9 +140,9 @@ export function HomeHero() {
 
         <div
           id="product"
-          className="relative mt-8 min-h-[22rem] scroll-mt-24 overflow-hidden border border-[var(--home-border)] bg-[var(--home-surface)] md:min-h-[28rem] lg:mt-10"
+          className="relative mt-8 min-h-[22rem] scroll-mt-24 overflow-hidden border border-[var(--home-border)] bg-[var(--home-surface)] md:min-h-[38rem] lg:mt-10"
         >
-          <div className="pointer-events-none absolute inset-x-3 top-3 z-20 md:right-[24.25rem]">
+          <div className="pointer-events-none absolute inset-x-3 top-3 z-20">
             <div className="border border-[var(--home-border)] bg-[#0b0b0b]/88 px-3 py-2.5 backdrop-blur-md">
               <p className="home-mono text-[11px] text-[var(--home-text-3)]">
                 Week 39 · 21–27 Sep
@@ -162,7 +162,7 @@ export function HomeHero() {
             </div>
           </div>
 
-          <div className="min-w-0 overflow-x-auto px-3 pb-5 pt-[5.75rem] md:pr-[24.25rem] md:pb-6">
+          <div className="min-w-0 overflow-x-auto px-3 pb-5 pt-[5.75rem] md:pb-6">
             <div className="grid min-w-[48rem] grid-cols-7 gap-2">
               {days.map((day) => (
                 <div key={day.date} className="flex flex-col">
@@ -187,8 +187,8 @@ export function HomeHero() {
             </div>
           </div>
 
-          <aside className="relative z-20 border-t border-[var(--home-border)] bg-[#0c0c0c] md:absolute md:top-3 md:right-3 md:bottom-3 md:w-[22.5rem] md:border md:border-[var(--home-border)] md:shadow-[0_24px_60px_rgba(0,0,0,0.45)]">
-            <div className="flex items-center justify-between border-b border-[var(--home-border)] px-4 py-3">
+          <aside className="relative z-20 border-t border-[var(--home-border)] bg-[#0c0c0c] md:absolute md:right-3 md:bottom-3 md:flex md:max-h-[22rem] md:w-[22rem] md:flex-col md:border md:border-[var(--home-border)] md:shadow-[0_24px_60px_rgba(0,0,0,0.45)]">
+            <div className="flex items-center justify-between border-b border-[var(--home-border)] px-3 py-2.5">
               <p className="text-[13px] font-medium text-[var(--home-text)]">
                 Ask Ahead
               </p>
@@ -196,21 +196,21 @@ export function HomeHero() {
                 Live
               </span>
             </div>
-            <div className="flex flex-col gap-3 p-4">
-              <p className="home-rise home-rise-1 ml-auto max-w-[94%] bg-[#f5f5f3] px-3 py-2 text-[13px] leading-5 text-[#111]">
+            <div className="flex min-h-0 flex-col gap-2.5 overflow-y-auto p-3">
+              <p className="home-rise home-rise-1 ml-auto max-w-[92%] bg-[#f5f5f3] px-3 py-2 text-[13px] leading-5 text-[#111]">
                 I’ve got three races in the next 14 days. What should I do
                 between them?
               </p>
-              <div className="home-rise home-rise-2 max-w-[96%] border-l-2 border-[var(--home-accent)] bg-[var(--home-surface-2)] px-3 py-2 text-[13px] leading-5 text-[var(--home-text-2)]">
+              <div className="home-rise home-rise-2 max-w-[94%] border-l-2 border-[var(--home-accent)] bg-[var(--home-surface-2)] px-3 py-2 text-[13px] leading-5 text-[var(--home-text-2)]">
                 You’ve already done enough race-specific work this week. Keep
                 one quality session, retain the easy volume and put a short
                 opener before the A race.
               </div>
-              <div className="home-rise home-rise-3 border border-[var(--home-border)] bg-[var(--home-surface-2)] p-3">
+              <div className="home-rise home-rise-3 border border-[var(--home-border)] bg-[var(--home-surface-2)] p-2.5">
                 <p className="home-mono text-[10px] tracking-[0.16em] text-[var(--home-accent)] uppercase">
                   Proposed changes
                 </p>
-                <ul className="mt-2 grid gap-2 text-[13px] text-[var(--home-text)]">
+                <ul className="mt-2 grid gap-1.5 text-[13px] text-[var(--home-text)]">
                   <li className="flex justify-between gap-3">
                     <span>Tue · CX specific</span>
                     <span className="home-mono text-[var(--home-text-3)]">
@@ -230,13 +230,18 @@ export function HomeHero() {
                     </span>
                   </li>
                 </ul>
-                <div className="mt-3 flex gap-2">
+                <div className="mt-2.5 flex gap-2">
                   <span className="home-cta home-cta-sm">Apply changes</span>
                   <span className="inline-flex h-8 items-center px-2 text-xs text-[var(--home-text-3)]">
                     Dismiss
                   </span>
                 </div>
               </div>
+            </div>
+            <div className="border-t border-[var(--home-border)] px-3 py-2.5">
+              <p className="border border-[var(--home-border)] bg-[var(--home-surface-2)] px-3 py-2 text-[13px] text-[var(--home-text-3)]">
+                Ask in plain English…
+              </p>
             </div>
           </aside>
         </div>

@@ -22,8 +22,8 @@ function initials(name: string) {
 function avatarSrc(name: string) {
   const label = initials(name);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
-    <circle cx="20" cy="20" r="20" fill="#00e05a"/>
-    <text x="20" y="21" text-anchor="middle" dominant-baseline="middle" fill="#04140a" font-family="ui-sans-serif, system-ui, sans-serif" font-size="16" font-weight="600">${label}</text>
+    <circle cx="20" cy="20" r="19.25" fill="#171717" stroke="rgba(255,255,255,0.16)" stroke-width="1.5"/>
+    <text x="20" y="21" text-anchor="middle" dominant-baseline="middle" fill="#f5f5f3" font-family="ui-sans-serif, system-ui, sans-serif" font-size="16" font-weight="600">${label}</text>
   </svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
@@ -40,7 +40,7 @@ export function AccountMenu({ user }: { user: AuthUser }) {
           className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full p-0"
           aria-label="Account menu"
         >
-          <Avatar.Root className="inline-flex h-10 w-10 overflow-hidden rounded-full bg-forest">
+          <Avatar.Root className="inline-flex h-10 w-10 overflow-hidden rounded-full border border-line bg-paper-sunken">
             <Avatar.Image
               src={avatarSrc(user.displayName)}
               alt=""
@@ -48,7 +48,7 @@ export function AccountMenu({ user }: { user: AuthUser }) {
             />
             <Avatar.Fallback
               delayMs={0}
-              className="flex h-full w-full items-center justify-center text-[13px] font-medium text-paper"
+              className="flex h-full w-full items-center justify-center text-[13px] font-medium text-ink"
             >
               {label}
             </Avatar.Fallback>

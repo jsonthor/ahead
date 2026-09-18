@@ -435,7 +435,15 @@ export type Database = {
           capabilities?: Json | null;
           formula_version?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "activity_metrics_activity_id_fkey";
+            columns: ["activity_id"];
+            isOneToOne: true;
+            referencedRelation: "activities";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       activity_laps: {
         Row: ActivityLapRow;
