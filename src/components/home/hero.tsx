@@ -16,48 +16,46 @@ export function HomeHero({ signedIn = false }: { signedIn?: boolean }) {
 
   return (
       <section id="after-session">
-        <div className="relative min-h-[calc(100svh-4.25rem)] overflow-hidden sm:min-h-[calc(100svh-4.75rem)]">
-          <HomePhoto
-            src="/home/session-runner.jpg"
-            alt="A runner checking her watch mid-session in the rain"
-            preload
-            objectPosition="40% 8%"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/24 to-black/18" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/58 via-transparent to-black/10" />
+        <div className="relative lg:h-[calc(100svh-4.75rem)]">
+          <div className="relative h-[min(32rem,calc(100svh-4.25rem))] overflow-hidden sm:h-[min(38rem,calc(100svh-4.75rem))] lg:absolute lg:inset-0 lg:h-full">
+            <HomePhoto
+              src="/home/session-runner.jpg"
+              alt="A runner checking her watch mid-session in the rain"
+              preload
+              className="object-[28%_center] lg:object-[36%_22%]"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/24 to-black/18" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/58 via-transparent to-black/10" />
 
-          <div className="relative z-10 mx-auto flex min-h-[calc(100svh-4.25rem)] max-w-[1540px] flex-col justify-between gap-10 px-4 py-10 sm:min-h-[calc(100svh-4.75rem)] sm:px-6 lg:flex-row lg:items-end lg:justify-between lg:px-8 lg:py-16">
-            <div
-              className={`max-w-xl transition-opacity duration-500 ${
-                play.messages > 0
-                  ? "max-lg:pointer-events-none max-lg:opacity-0"
-                  : ""
-              }`}
-            >
-              <p className="home-mono text-[10px] font-bold tracking-[0.22em] text-white/70 uppercase">
-                For self-coached endurance athletes
-              </p>
-              <h1 className="home-display mt-8 max-w-[11ch] text-[clamp(3.2rem,6.4vw,6.6rem)] text-white">
-                Know if the work is working.
-              </h1>
-              <p className="mt-8 max-w-md text-[18px] leading-[1.5] tracking-[-0.018em] text-white/78">
-                Ahead follows the training you actually do, shows whether it’s
-                moving you forward, and helps you make the next call.
-              </p>
-              <div className="mt-8 flex flex-wrap items-center gap-x-7 gap-y-3">
-                <Link href={signedIn ? "/app" : "/signup"} className="home-cta">
-                  {signedIn ? "Open Ahead" : "Coming soon"}
-                </Link>
-                <a
-                  href="#product"
-                  className="inline-flex h-11 items-center text-[14px] text-white/70 transition-colors hover:text-white"
-                >
-                  See how it works
-                </a>
+            <div className="absolute inset-0 z-10 mx-auto flex max-w-[1540px] flex-col justify-end px-4 py-10 sm:px-6 lg:px-8 lg:py-16">
+              <div className="max-w-xl">
+                <p className="home-mono text-[10px] font-bold tracking-[0.22em] text-white/70 uppercase">
+                  For self-coached endurance athletes
+                </p>
+                <h1 className="home-display mt-6 max-w-[11ch] text-[clamp(2.6rem,11vw,6.6rem)] text-white sm:mt-8">
+                  Know if the work is working.
+                </h1>
+                <p className="mt-5 max-w-md text-[17px] leading-[1.5] tracking-[-0.018em] text-white/78 sm:mt-8 sm:text-[18px]">
+                  Ahead follows the training you actually do, shows whether it’s
+                  moving you forward, and helps you make the next call.
+                </p>
+                <div className="mt-6 flex flex-wrap items-center gap-x-7 gap-y-3 sm:mt-8">
+                  <Link href={signedIn ? "/app" : "/signup"} className="home-cta">
+                    {signedIn ? "Open Ahead" : "Coming soon"}
+                  </Link>
+                  <a
+                    href="#product"
+                    className="inline-flex h-11 items-center text-[14px] text-white/70 transition-colors hover:text-white"
+                  >
+                    See how it works
+                  </a>
+                </div>
               </div>
             </div>
+          </div>
 
-            <div className="flex w-full max-w-[26rem] flex-col items-stretch gap-3 self-end lg:min-w-[26rem]">
+          <div className="relative z-10 mx-auto w-full max-w-[26rem] px-4 py-6 sm:px-6 lg:absolute lg:inset-x-0 lg:bottom-0 lg:top-auto lg:mx-auto lg:flex lg:max-w-[1540px] lg:justify-end lg:px-8 lg:py-16">
+            <div className="flex w-full max-w-[26rem] shrink-0 flex-col items-stretch gap-3">
               <MetricsPanel compact={play.compact} />
               <div className="flex flex-col gap-2" aria-label="Ask Ahead">
                 <TypingBubble

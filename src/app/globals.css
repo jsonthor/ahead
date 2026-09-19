@@ -604,6 +604,23 @@ body {
   opacity: 0;
 }
 
+@media (max-width: 1023px) {
+  .home-metrics-inline {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+
+  .home-metrics-lead {
+    display: none;
+  }
+
+  .home-metrics-detail {
+    grid-template-rows: 0fr;
+    margin-top: 0;
+    opacity: 0;
+  }
+}
+
 @keyframes home-metrics-flash {
   0%,
   100% {
