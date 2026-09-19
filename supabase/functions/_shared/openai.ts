@@ -1,3 +1,7 @@
+import {
+  COACH_REVIEW_INSTRUCTIONS,
+  COACH_REVIEW_SCHEMA,
+} from "./coach-review.ts";
 import { STABLE_SYSTEM_PROMPT } from "./prompt.ts";
 import { OPENAI_TOOLS } from "./tools.ts";
 
@@ -5,6 +9,7 @@ export const LUNA_MODEL = "gpt-5.6-luna";
 export const TERRA_MODEL = "gpt-5.6-terra";
 const MEMORY_MODEL = "gpt-5.6-luna";
 const OPENAI_TIMEOUT_MS = 45_000;
+const COACH_REVIEW_TIMEOUT_MS = 90_000;
 const PROMPT_CACHE_PREFIX = "potential-ai-v1";
 
 type ResponseOutput = {
@@ -35,7 +40,7 @@ export type OpenAIResponse = {
   prompt_cache_diagnostics?: unknown;
 };
 
-async function openaiFetch(body: Record<string, unknown>) {
+async function openaiFetch(body: Record<string, unknown>, timeoutMs = OPENAI_TIMEOUT_MS) {
   const key = Deno.env.get("OPENAI_API_KEY")?.trim();
   if (!key) {
     throw new Error("OPENAI_API_KEY is not set on this Edge Function.");
@@ -47,7 +52,7 @@ async function openaiFetch(body: Record<string, unknown>) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(OPENAI_TIMEOUT_MS),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   const text = await response.text();
   if (!response.ok) {
@@ -63,8 +68,11 @@ function partText(part: unknown) {
   if (!part || typeof part !== "object") {
     return "";
   }
-  const row = part as { type?: string; text?: string };
-  if (row.type === "output_text" || row.type === "text") {
+  const row = part as { type?: string; text?: string; parsed?: unknown };
+  if (row.parsed && typeof row.parsed === "object") {
+    return JSON.stringify(row.parsed);
+  }
+  if (row.type === "output_text" || row.type === "text" || row.type === "output_json") {
     return typeof row.text === "string" ? row.text : "";
   }
   return typeof row.text === "string" ? row.text : "";
@@ -88,7 +96,7 @@ export function outputText(response: OpenAIResponse) {
   }
   const chunks: string[] = [];
   for (const item of response.output ?? []) {
-    if (item.type && item.type !== "message") {
+    if (item.type && item.type !== "message" && item.type !== "output_text") {
       continue;
     }
     const content = item.content;
@@ -139,6 +147,28 @@ export function createChatResponse(input: {
       : {}),
     ...(input.previousResponseId ? { previous_response_id: input.previousResponseId } : {}),
   });
+}
+
+export function createCoachReviewResponse(input: unknown) {
+  return openaiFetch(
+    {
+      model: TERRA_MODEL,
+      reasoning: { effort: "medium" },
+      max_output_tokens: 4000,
+      instructions: COACH_REVIEW_INSTRUCTIONS,
+      input,
+      store: false,
+      text: {
+        format: {
+          type: "json_schema",
+          name: "coach_review",
+          strict: true,
+          schema: COACH_REVIEW_SCHEMA,
+        },
+      },
+    },
+    COACH_REVIEW_TIMEOUT_MS,
+  );
 }
 
 export function createMemoryResponse(input: unknown) {

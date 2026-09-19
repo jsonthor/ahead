@@ -1,16 +1,18 @@
 /**
- * Potential v0.4 — how much of the capacity already built is currently
+ * Potential v0.7 — how much of the capacity already built is currently
  * expressible, on a 0–100 athlete-relative scale.
  *
  * Not freshness (Fatigue), not Direction, not Race Readiness.
  * Built from Potential mix + load. FIT/streams are not required.
+ * Calibration is frozen to that mix; bump POTENTIAL_VERSION when mix
+ * inputs change (HR zone model) so stale 0–100 scales are discarded.
  */
 
 export const AEROBIC_TAU = 42;
 export const SPECIFIC_TAU = 18;
 export const ACUTE_TAU = 8;
 export const ACCUSTOMED_TAU = 28;
-export const POTENTIAL_VERSION = "potential-v0.4";
+export const POTENTIAL_VERSION = "potential-v0.7";
 export const OTHER_AEROBIC_WEIGHT = 0.2;
 export const AEROBIC_FROM_SPECIFIC = 0.35;
 export const SPECIFIC_FROM_TEMPO = 0.8;
@@ -203,7 +205,8 @@ export function buildCalibration(
   raw: { date: string; aerobic: number; specific: number }[],
   frozenAt: string,
 ): PotentialCalibration {
-  const sample = sampleDays(raw);
+  const warmed = raw.length > AEROBIC_TAU ? raw.slice(AEROBIC_TAU) : raw;
+  const sample = sampleDays(warmed);
   const aerobicValues = sample.map((row) => row.aerobic);
   const specificValues = sample.map((row) => row.specific);
   const aerobic = padRange(

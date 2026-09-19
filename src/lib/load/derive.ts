@@ -5,17 +5,25 @@ import {
   type LoadMethod,
 } from "@/lib/activity";
 import type { StreamPoint } from "@/lib/fit/parse";
+import { classifyIntensity, hrCalibrationWarning } from "@/lib/hr-model/quality";
+import {
+  UNKNOWN_HR_MODEL,
+  type HrModel,
+  type IntensityClassification,
+} from "@/lib/hr-model/types";
+import {
+  snapshotBounds,
+  zoneForHr,
+  zoneSchemeFor,
+  zoneSecondsFromStream,
+  type HrZoneSeconds,
+  type ZoneScheme,
+} from "@/lib/hr-model/zones";
 import type { WorkoutSport } from "@/lib/workout";
 
-export const LOAD_FORMULA_VERSION = "summary-cascade-v4";
+export const LOAD_FORMULA_VERSION = "summary-cascade-v6-lthr";
 
-export type HrZoneSeconds = {
-  z1: number;
-  z2: number;
-  z3: number;
-  z4: number;
-  z5: number;
-};
+export type { HrZoneSeconds };
 
 export type TrainingMix = {
   easy_seconds: number;
@@ -42,6 +50,15 @@ export type DerivedActivityMetrics = {
   data_quality: DataQuality;
   capabilities: ActivityCapabilities;
   formula_version: typeof LOAD_FORMULA_VERSION;
+  hr_model: HrModel;
+  intensity_classification: IntensityClassification;
+  intensity_warning: string | null;
+  hr_z1_max: number | null;
+  hr_z2_max: number | null;
+  hr_z3_max: number | null;
+  hr_z4_max: number | null;
+  threshold_hr: number | null;
+  zone_method: ZoneScheme["method"] | null;
 };
 
 const EMPTY_ZONES: HrZoneSeconds = { z1: 0, z2: 0, z3: 0, z4: 0, z5: 0 };
@@ -67,46 +84,7 @@ const EASY_SPEED_MPS: Partial<Record<WorkoutSport, number>> = {
   ski: 2.6,
 };
 
-export function hrMaxForZones(profileMax?: number | null): number {
-  return profileMax && profileMax >= 140 && profileMax <= 220 ? profileMax : 190;
-}
-
-export function zoneForHr(hr: number, hrMax: number): keyof HrZoneSeconds {
-  const pct = hr / hrMax;
-  if (pct < 0.6) {
-    return "z1";
-  }
-  if (pct < 0.7) {
-    return "z2";
-  }
-  if (pct < 0.8) {
-    return "z3";
-  }
-  if (pct < 0.9) {
-    return "z4";
-  }
-  return "z5";
-}
-
-export function zoneSecondsFromStream(
-  points: StreamPoint[],
-  hrMax: number,
-): HrZoneSeconds {
-  const zones = { ...EMPTY_ZONES };
-  for (let index = 0; index < points.length; index += 1) {
-    const hr = points[index]?.hr;
-    if (hr == null || hr < 40) {
-      continue;
-    }
-    const next = points[index + 1]?.t;
-    const dt =
-      next != null && next > points[index].t
-        ? Math.min(30, next - points[index].t)
-        : 1;
-    zones[zoneForHr(hr, hrMax)] += dt;
-  }
-  return zones;
-}
+export { zoneForHr, zoneSecondsFromStream };
 
 export function mixFromZones(zones: HrZoneSeconds): TrainingMix {
   return {
@@ -143,14 +121,14 @@ function applyMix(durationSeconds: number, parts: [number, number, number]): Tra
 
 export function cyclingIntensityFactor(input: {
   avgHr?: number | null;
-  hrMax?: number | null;
+  hrModel?: HrModel;
   avgPower?: number | null;
   avgSpeedMps?: number | null;
   rpe?: number | null;
 }): number | null {
-  const hrMax = hrMaxForZones(input.hrMax);
-  if (input.avgHr && input.avgHr >= 40) {
-    return input.avgHr / hrMax;
+  const scheme = input.hrModel ? zoneSchemeFor(input.hrModel, "ride") : null;
+  if (scheme && input.avgHr && input.avgHr >= 40) {
+    return input.avgHr / scheme.anchor;
   }
   if (input.avgPower && input.avgPower > 0) {
     return input.avgPower / 200;
@@ -180,14 +158,14 @@ export function mixFromCyclingIntensity(durationSeconds: number, intensity: numb
 export function intensityBand(input: {
   sport: WorkoutSport | string;
   avgHr?: number | null;
-  hrMax?: number | null;
+  hrModel?: HrModel;
   avgPower?: number | null;
   avgSpeedMps?: number | null;
   rpe?: number | null;
 }): IntensityBand {
-  const hrMax = hrMaxForZones(input.hrMax);
-  if (input.avgHr && input.avgHr >= 40) {
-    const zone = zoneForHr(input.avgHr, hrMax);
+  const scheme = input.hrModel ? zoneSchemeFor(input.hrModel, input.sport) : null;
+  if (scheme && input.avgHr && input.avgHr >= 40) {
+    const zone = zoneForHr(input.avgHr, scheme);
     if (zone === "z1" || zone === "z2") {
       return "easy";
     }
@@ -250,7 +228,7 @@ export function mixFromLaps(
   laps: MixLap[],
   input: {
     sport: WorkoutSport | string;
-    hrMax?: number | null;
+    hrModel?: HrModel;
   },
 ): TrainingMix | null {
   const mix: TrainingMix = { easy_seconds: 0, specific_seconds: 0, high_seconds: 0 };
@@ -269,7 +247,7 @@ export function mixFromLaps(
     const band = intensityBand({
       sport: input.sport,
       avgHr: lap.avgHr,
-      hrMax: input.hrMax,
+      hrModel: input.hrModel,
       avgPower: lap.avgPower,
     });
     mix.easy_seconds += band === "easy" ? seconds : 0;
@@ -315,7 +293,8 @@ export function deriveActivityMetrics(input: {
   rpe?: number | null;
   sessionType?: string | null;
   stream?: StreamPoint[];
-  hrMax?: number | null;
+  hrModel?: HrModel;
+  sessionMaxHr?: number | null;
   hasLaps?: boolean;
   hasFit?: boolean;
   laps?: MixLap[];
@@ -325,7 +304,8 @@ export function deriveActivityMetrics(input: {
   const hours = minutes / 60;
   const rpe =
     input.rpe && input.rpe >= 1 && input.rpe <= 10 ? input.rpe : null;
-  const hrMax = hrMaxForZones(input.hrMax);
+  const hrModel = input.hrModel ?? UNKNOWN_HR_MODEL;
+  const scheme = zoneSchemeFor(hrModel, sport);
   const speed =
     input.avgSpeedMps && input.avgSpeedMps > 0
       ? input.avgSpeedMps
@@ -349,8 +329,8 @@ export function deriveActivityMetrics(input: {
   let data_quality: DataQuality = "estimated";
   let potential_load = minutes * (SPORT_DURATION_FACTOR[sport] ?? 0.5);
 
-  if (streamHasHr(input.stream)) {
-    Object.assign(zones, zoneSecondsFromStream(input.stream ?? [], hrMax));
+  if (scheme && streamHasHr(input.stream)) {
+    Object.assign(zones, zoneSecondsFromStream(input.stream ?? [], scheme));
     if (hasZoneTime(zones)) {
       potential_load = edwardsLoad(zones);
       load_method = "hr_stream";
@@ -358,8 +338,8 @@ export function deriveActivityMetrics(input: {
     }
   }
 
-  if (load_method === "duration_sport" && input.avgHr && input.avgHr >= 40 && minutes > 0) {
-    zones[zoneForHr(input.avgHr, hrMax)] = input.durationSeconds ?? 0;
+  if (scheme && load_method === "duration_sport" && input.avgHr && input.avgHr >= 40 && minutes > 0) {
+    zones[zoneForHr(input.avgHr, scheme)] = input.durationSeconds ?? 0;
     potential_load = edwardsLoad(zones);
     load_method = "hr_duration";
     data_quality = "good";
@@ -394,48 +374,44 @@ export function deriveActivityMetrics(input: {
 
   let mix: TrainingMix = { easy_seconds: 0, specific_seconds: 0, high_seconds: 0 };
   const duration = input.durationSeconds ?? 0;
-  if (load_method === "hr_stream" && hasZoneTime(zones)) {
+  if (scheme && load_method === "hr_stream" && hasZoneTime(zones)) {
     mix = mixFromZones(zones);
   } else if (duration > 0) {
     mix =
-      mixFromLaps(input.laps ?? [], { sport, hrMax: input.hrMax }) ??
-      (sport === "ride"
-        ? mixFromCyclingIntensity(
-            duration,
-            cyclingIntensityFactor({
-              avgHr: input.avgHr,
-              hrMax: input.hrMax,
-              avgPower: power,
-              avgSpeedMps: speed,
-              rpe,
-            }),
-          )
-        : estimateTrainingMix(
-            duration,
-            intensityBand({
-              sport,
-              avgHr: input.avgHr,
-              hrMax: input.hrMax,
-              avgPower: power,
-              avgSpeedMps: speed,
-              rpe,
-            }),
-            input.sessionType,
-          ));
+      mixFromLaps(input.laps ?? [], { sport, hrModel }) ??
+      estimateTrainingMix(
+        duration,
+        intensityBand({
+          sport,
+          avgHr: scheme ? input.avgHr : null,
+          hrModel,
+          avgPower: power,
+          avgSpeedMps: speed,
+          rpe,
+        }),
+        input.sessionType,
+      );
   }
+  if (!scheme) {
+    mix = { easy_seconds: 0, specific_seconds: 0, high_seconds: 0 };
+  }
+
+  const classification = classifyIntensity(hrModel, sport);
+  const bounds = scheme ? snapshotBounds(scheme) : null;
+  const roundedZones = {
+    z1: Math.round(zones.z1),
+    z2: Math.round(zones.z2),
+    z3: Math.round(zones.z3),
+    z4: Math.round(zones.z4),
+    z5: Math.round(zones.z5),
+  };
 
   return {
     potential_load: round1(potential_load),
     intensity: hours > 0 ? round1(potential_load / hours) : null,
-    aerobic_load: round1((zones.z1 * 1 + zones.z2 * 2) / 180),
-    specific_load: round1((zones.z3 * 3 + zones.z4 * 4 + zones.z5 * 5) / 180),
-    hr_zone_seconds: {
-      z1: Math.round(zones.z1),
-      z2: Math.round(zones.z2),
-      z3: Math.round(zones.z3),
-      z4: Math.round(zones.z4),
-      z5: Math.round(zones.z5),
-    },
+    aerobic_load: scheme ? round1((zones.z1 * 1 + zones.z2 * 2) / 180) : 0,
+    specific_load: scheme ? round1((zones.z3 * 3 + zones.z4 * 4 + zones.z5 * 5) / 180) : 0,
+    hr_zone_seconds: roundedZones,
     training_mix: {
       easy_seconds: Math.round(mix.easy_seconds),
       specific_seconds: Math.round(mix.specific_seconds),
@@ -445,5 +421,22 @@ export function deriveActivityMetrics(input: {
     data_quality,
     capabilities,
     formula_version: LOAD_FORMULA_VERSION,
+    hr_model: { ...hrModel, version: scheme?.version ?? hrModel.version },
+    intensity_classification: classification,
+    intensity_warning: hrCalibrationWarning({
+      model: hrModel,
+      scheme,
+      avgHr: input.avgHr,
+      sessionMaxHr: input.sessionMaxHr ?? null,
+      durationSeconds: input.durationSeconds,
+      zones: hasZoneTime(roundedZones) ? roundedZones : null,
+      sessionType: input.sessionType,
+    }),
+    hr_z1_max: bounds?.hr_z1_max ?? null,
+    hr_z2_max: bounds?.hr_z2_max ?? null,
+    hr_z3_max: bounds?.hr_z3_max ?? null,
+    hr_z4_max: bounds?.hr_z4_max ?? null,
+    threshold_hr: scheme?.method === "lthr" ? scheme.anchor : null,
+    zone_method: scheme?.method ?? null,
   };
 }

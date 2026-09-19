@@ -108,6 +108,14 @@ export function formatMonthTitle(monthKey: string): string {
   return formatUtcKey(`${monthKey}-01`, { month: "long", year: "numeric" });
 }
 
+export function formatMonthName(dayKey: string): string {
+  return formatUtcKey(dayKey, { month: "long" });
+}
+
+export function formatDayRange(start: string, end: string): string {
+  return `${formatDayShort(start)} – ${formatDayShort(end)}`;
+}
+
 export function isSameMonth(dayKey: string, monthKey: string): boolean {
   return dayKey.startsWith(monthKey);
 }

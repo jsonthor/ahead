@@ -75,6 +75,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const dashboardActive = pathname === "/app";
   const calendarActive = pathname.startsWith("/app/calendar");
+  const reviewsActive = pathname.startsWith("/app/reviews");
 
   return (
     <AppUserContext.Provider value={{ user, setUser }}>
@@ -102,10 +103,19 @@ export function AppShell({ children }: { children: ReactNode }) {
               >
                 Calendar
               </Link>
+              <Link
+                href="/app/reviews"
+                className={navClass(reviewsActive)}
+                aria-current={reviewsActive ? "page" : undefined}
+              >
+                Reviews
+              </Link>
             </nav>
             <div className="ml-auto flex items-center gap-3">
               <SyncMenu />
-              <AskPotential />
+              <Suspense>
+                <AskPotential />
+              </Suspense>
               <AccountMenu user={user} />
             </div>
           </div>

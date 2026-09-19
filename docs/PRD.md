@@ -298,16 +298,21 @@ Copy must say these are **trend indicators**, not race-day predictions.
 
 ### 9.5 Wellness / “how I am”
 
-This is the data that makes the chatbot actually useful for self-understanding.
+Canonical spec: [PRD-wellness.md](./PRD-wellness.md).
+
+Imported recovery (sleep, HRV, resting HR, stress) is already on `wellness_days` / `daily_recovery`. That is not Wellness. Wellness is the human layer the watch cannot see.
+
+**v1 is a contextual data-capture system, not an interpretation dashboard.** Morning check-in from a fixed catalogue. Each item has a temporal scope (previous day / overnight / this morning). **Everything normal** writes usual defaults, not “healthy,” and does not tick routines. Missing ≠ explicitly-normal. Ask Ahead must distinguish logged fact, assumed routine, and missing. Analysis and any homepage (“What seems to matter” vs trajectory) wait until people are logging.
 
 | ID | Requirement | P |
 | --- | --- | --- |
-| W1 | Daily check-in: sleep hours/quality, HRV (optional), resting HR, soreness, stress, motivation, illness flag, notes | P0 |
-| W2 | One-tap check-in from home and from chat | P0 |
-| W3 | Optional Apple Health / Oura / Whoop import later | P1 |
-| W4 | Wellness visible on calendar days (dots / glyphs) | P0 |
-
-Without wellness, the bot can only talk about training load. With it, it can talk about the athlete.
+| W1 | Catalogue check-in + usual-day defaults + Everything normal | P0 |
+| W2 | Answers stored with temporal scope (not one yesterday blob) | P0 |
+| W3 | Routines (assume true, no daily ticks) and dated Events | P0 |
+| W4 | Ask Ahead: logged vs assumed vs missing; never invent | P0 |
+| W5 | Dashboard/calendar: missing ≠ explicitly-normal | P0 |
+| W6 | Own-data associations (~60 days); homepage TBD from data | P1 |
+| W7 | Experiments; custom questions | P2 |
 
 ### 9.6 Insights (non-chat)
 
@@ -343,7 +348,22 @@ Canonical spec: [PRD-potential-ai.md](./PRD-potential-ai.md). Summary requiremen
 | B11 | Voice input | P2 |
 | B12 | Proactive “something changed” surfaces | P2 |
 
-### 9.8 Notifications
+### 9.8 Coach Review
+
+Canonical spec: [PRD-coach-review.md](./PRD-coach-review.md).
+
+Ask Ahead stays day-to-day. Reviews has two cadences: a deterministic weekly note (what landed) and a Terra Coach Review (~4 weeks) that sets the next block. Persist reviews on the athlete. The monthly coach must see stated goals and A-races beyond the next 42 days. Near-term CX does not rewrite a July half. Do not expose model names. Weekly does not reset the monthly clock. Dashboard only prompts for Coach Review when it is ready. Fitness up is stimulus, not proof. Do not invent a prior block objective. Do not queue missed reviews. Titles such as CX or opener are not races. Immediate weekend advice is separate from the next-block objective.
+
+| ID | Requirement | P |
+| --- | --- | --- |
+| CR1 | Dedicated “Coach Review is ready” entry; athlete starts it | P1 |
+| CR2 | Structured review: intent → what happened → did it work → lessons → next block | P1 |
+| CR3 | Persist review + evidence snapshot + coaching decisions | P1 |
+| CR4 | Strategy before calendar; existing proposal/apply model | P1 |
+| CR5 | Follow-ups stay in Ask Ahead; review does not restrict daily coaching | P1 |
+| CR6 | Weekly review is deterministic, 7-day, no next-block strategy | P1 |
+
+### 9.9 Notifications
 
 | ID | Requirement | P |
 | --- | --- | --- |

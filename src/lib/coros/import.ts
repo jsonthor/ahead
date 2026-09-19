@@ -22,11 +22,10 @@ import { parseFitFile, type FitSummary, type StreamPoint } from "@/lib/fit/parse
 import { activityStreamPath } from "@/lib/fit/stream";
 import { recomputeDailyLoads } from "@/lib/load/banister";
 import type { WorkoutSport } from "@/lib/workout";
-import { deriveActivityMetrics } from "@/lib/load/derive";
 import { linkActivitiesToCalendarItems } from "@/lib/calendar-event";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordIntegrationSync } from "@/lib/ingest/sync";
-import { assignImportedRoute } from "@/lib/ingest/persist";
+import { assignImportedRoute, upsertImportedMetrics } from "@/lib/ingest/persist";
 import type { ImportProgress } from "@/lib/coros/progress";
 
 export const HISTORY_DAYS = 365 * 8;
@@ -301,7 +300,7 @@ async function persistParsedFit(input: {
 }) {
   let activity = input.activity;
   let stream: StreamPoint[] = [];
-  let hrMax: number | null = activity.max_hr;
+  let providerProfileHrMax: number | null = null;
   let laps: {
     source_index: number;
     started_at: string | null;
@@ -314,7 +313,7 @@ async function persistParsedFit(input: {
     const parsed = await parseFitFile(input.bytes);
     activity = overlayFitSummary(activity, parsed.summary);
     stream = parsed.stream;
-    hrMax = parsed.summary.profile_hr_max ?? parsed.summary.max_hr ?? hrMax;
+    providerProfileHrMax = parsed.summary.profile_hr_max;
     laps = parsed.laps;
     if (stream.length > 0) {
       await storeStream({
@@ -331,8 +330,8 @@ async function persistParsedFit(input: {
     });
   }
   await upsertActivity(input.athleteId, activity, { raw_fit_key: input.rawFitKey });
-  await upsertMetrics(input.activityId, activity, stream.length ? stream : undefined, {
-    hrMax,
+  await upsertMetrics(input.athleteId, input.activityId, activity, stream.length ? stream : undefined, {
+    providerProfileHrMax,
     hasFit: true,
     hasLaps: laps.length > 0,
     laps,
@@ -497,12 +496,23 @@ async function upsertActivity(athleteId: string, activity: MappedActivity, extra
   return data;
 }
 
+async function timeZoneFor(athleteId: string) {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("profiles")
+    .select("timezone")
+    .eq("id", athleteId)
+    .maybeSingle();
+  return data?.timezone || "Europe/London";
+}
+
 async function upsertMetrics(
+  athleteId: string,
   activityId: string,
   activity: MappedActivity,
   stream: StreamPoint[] | undefined,
   extra?: {
-    hrMax?: number | null;
+    providerProfileHrMax?: number | null;
     hasFit?: boolean;
     hasLaps?: boolean;
     rpe?: number | null;
@@ -514,44 +524,16 @@ async function upsertMetrics(
     }[];
   },
 ) {
-  const metrics = deriveActivityMetrics({
-    sport: activity.sport,
-    durationSeconds: activity.duration_seconds,
-    distanceM: activity.distance_m,
-    avgHr: activity.avg_hr,
-    avgPower: activity.avg_power,
-    normalizedPower: activity.normalized_power,
-    avgSpeedMps: activity.avg_speed_mps,
+  return upsertImportedMetrics(activityId, activity, stream, {
+    athleteId,
+    timeZone: await timeZoneFor(athleteId),
+    providerProfileHrMax: extra?.providerProfileHrMax,
+    hasFit: extra?.hasFit,
+    hasLaps: extra?.hasLaps,
     rpe: extra?.rpe,
     sessionType: extra?.sessionType,
-    stream,
-    hrMax: extra?.hrMax ?? activity.max_hr,
-    hasFit: extra?.hasFit,
-    hasLaps: extra?.hasLaps || (extra?.laps?.length ?? 0) > 0,
-    laps: extra?.laps?.map((lap) => ({
-      durationSeconds: lap.duration_seconds,
-      avgHr: lap.avg_hr,
-      avgPower: lap.avg_power,
-    })),
+    laps: extra?.laps,
   });
-  const admin = createAdminClient();
-  const { error } = await admin.from("activity_metrics").upsert({
-    activity_id: activityId,
-    potential_load: metrics.potential_load,
-    intensity: metrics.intensity,
-    aerobic_load: metrics.aerobic_load,
-    specific_load: metrics.specific_load,
-    hr_zone_seconds: metrics.hr_zone_seconds as unknown as Json,
-    training_mix: metrics.training_mix as unknown as Json,
-    load_method: metrics.load_method,
-    data_quality: metrics.data_quality,
-    capabilities: metrics.capabilities as unknown as Json,
-    formula_version: metrics.formula_version,
-  });
-  if (error) {
-    throw error;
-  }
-  return metrics;
 }
 
 async function replaceLaps(
@@ -800,7 +782,7 @@ async function runCorosImport(input: {
         activity,
         rawFitKey: row.raw_fit_key,
       });
-      await upsertMetrics(row.id, activity, undefined, { hrMax: activity.max_hr });
+      await upsertMetrics(input.athleteId, row.id, activity, undefined);
     } catch (error) {
       console.error("COROS activity upsert failed", error);
     }
@@ -851,7 +833,7 @@ async function runCorosImport(input: {
     }
     let activity = row.activity;
     let stream: StreamPoint[] | undefined;
-    let hrMax: number | null = activity.max_hr;
+    let providerProfileHrMax: number | null = null;
     let laps: {
       duration_seconds: number | null;
       avg_hr: number | null;
@@ -895,7 +877,7 @@ async function runCorosImport(input: {
         const parsed = await parseFitFile(bytes);
         activity = overlayFitSummary(activity, parsed.summary);
         stream = parsed.stream;
-        hrMax = parsed.summary.profile_hr_max ?? parsed.summary.max_hr ?? hrMax;
+        providerProfileHrMax = parsed.summary.profile_hr_max;
         laps = parsed.laps;
         if (stream.length > 0) {
           await storeStream({
@@ -912,8 +894,8 @@ async function runCorosImport(input: {
         });
       }
       await upsertActivity(input.athleteId, activity, { raw_fit_key: rawFitKey });
-      await upsertMetrics(row.id, activity, stream, {
-        hrMax,
+      await upsertMetrics(input.athleteId, row.id, activity, stream, {
+        providerProfileHrMax,
         hasFit: true,
         hasLaps: laps.length > 0,
         laps,
@@ -965,10 +947,7 @@ async function runCorosImport(input: {
   });
   let daily = 0;
   try {
-    daily = await recomputeDailyLoads(
-      input.athleteId,
-      timeZone,
-    );
+    daily = await recomputeDailyLoads(input.athleteId, timeZone);
   } catch (error) {
     console.error("Potential daily load recompute failed", error);
   }

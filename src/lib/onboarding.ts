@@ -475,8 +475,16 @@ export function summarize(answers: OnboardingAnswers) {
         })
       : [];
 
-  const raceCount =
-    races?.type === "event_list" ? races.events.length : 0;
+  const priorityRaces =
+    races?.type === "event_list"
+      ? races.events
+          .filter((event) => event.name.trim())
+          .map((event) => ({
+            name: event.name.trim(),
+            date: event.date || null,
+            priority: event.priority,
+          }))
+      : [];
 
   const focus =
     improve?.type === "choice" && improve.ids[0]
@@ -489,7 +497,8 @@ export function summarize(answers: OnboardingAnswers) {
   return {
     sport,
     season: seasonLabel,
-    raceCount,
+    raceCount: priorityRaces.length,
+    priorityRaces,
     availableDays,
     sessions,
     focus,

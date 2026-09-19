@@ -73,6 +73,12 @@ export function AccountMenu({ user }: { user: AuthUser }) {
           </DropdownMenu.Item>
           <DropdownMenu.Item
             className={itemClassName}
+            onSelect={() => router.push("/app/zones")}
+          >
+            Zones
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            className={itemClassName}
             onSelect={() => router.push("/app/connect")}
           >
             Connect

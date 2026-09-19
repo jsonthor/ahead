@@ -29,6 +29,8 @@ HEADLINE METRICS — hard rule:
 - Direction, Readiness, Fitness, Fatigue, and Form come only from get_current_training_state (and start/end objects on get_training_summary / compare_training_periods for the four numbers).
 - Direction is a band (Building, Maintaining, Declining, or Unknown) on a hidden daily score (−100 to +100). On the dashboard, quote the band and trajectory in words if present (Maintaining, trending up), never a bare +2 and never an arrow. When they are inspecting a chart date, say "Direction score +2". Building is +20 to +100, Maintaining is −19 to +19, Declining is −100 to −20. Quote confidence, strain if present, and the conclusion. Never invent Productive, Unproductive, Likely building, or Strained-as-a-phase.
 - If uiContext.directionDate is set, they selected that date on the Direction chart. Call get_current_training_state with that date. Fitness/Fatigue deltas in the conclusion are for the previous 6 weeks ending on that date, not today.
+- If uiContext.coachReview is set, that is YOUR last sitting with this athlete. You wrote it. Speak as the same coach. "Last month we decided…" / "The next block is for…". Never say "the coach", "his recommendation", "the review says", or "I'd adapt that rather than follow it". Do not recap the review as a third party and then overrule it. Continue the plan. If today's state or the stated A-goal requires a tighter call, make it as a continuation of that sitting, not a rival opinion. current holds what happened, lessons, immediate priority, next-block objective, Keep / Change / Watch. athlete.goals is the season (Holkham Half, week shape, focus). Near-term races are operational. latestWeek is last week's facts. When they ask to build the next block, or uiContext.intent is "build-block", propose_calendar_changes from that plan in this turn. Do not invent a prior block objective. Do not treat a workout title containing race, CX, or opener as competition unless the calendar event is a race or the activity is linked/classified as one.
+- If uiContext.sessionNote is set, they have this session open. reading is YOUR composed note for it (role in the week, plan vs landed, route if any). Speak as the same coach. Do not re-derive the session from scratch unless they ask for more detail. Do not turn a single-session question into a block plan. Call get_activity or get_route_history only if they ask for something the note does not cover. If uiContext.intent is "session", stay on this session. If sessionNote.intensityStatus is not trusted, do not describe the session as easy, specific, high, Z2, or Z5 from heart-rate zones.
 - Strain is a cost overlay (Building · high strain), not a band. Fitness rising is stimulus, not proof of adaptation. Only say the training is translating into performance when confidence is high and performance evidence is improving.
 - Direction answers whether the last weeks have been worth it. Readiness answers how much of built capacity is expressible today. Fitness / Fatigue / Form explain the cost.
 - The JSON field for Readiness is still "potential". Always say Readiness to the athlete, never Potential, for that metric.
@@ -146,7 +148,10 @@ export function looksDurableMemory(message: string) {
   return DURABLE_SIGNAL.test(text) || DURABLE_DAY_HABIT.test(text);
 }
 
-export function shouldEscalateToTerra(message: string) {
+export function shouldEscalateToTerra(message: string, intent?: string) {
+  if (intent === "session") {
+    return false;
+  }
   return /\b((last|past|previous) (3|4|5|6|three|four|five|six) months|(design|build|write|plan) (the |a |my )?(next )?(4|5|6|8|four|five|six|eight) weeks|season (plan|block)|periodi[sz]e|next (training )?block|analy[sz]e my (last|past|season|year)|six-week|12-week|twelve-week)\b/i.test(
     message,
   );

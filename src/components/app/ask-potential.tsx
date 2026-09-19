@@ -12,6 +12,7 @@ import {
   type CalendarProposal,
 } from "@/lib/chat/proposal";
 import { formatWeekdayDate } from "@/lib/calendar";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   appliedSummary,
   changeMeta,
@@ -25,6 +26,21 @@ import {
   getDirectionSelection,
   type DirectionAskDetail,
 } from "@/lib/direction-ask";
+import { useAppUser } from "@/components/app/app-shell";
+import {
+  BUILD_REVIEW_PARAM,
+  COACH_REVIEW_ASK_EVENT,
+  buildBlockMessage,
+  coachReviewContext,
+  setCoachReviewSelection,
+  type CoachReviewAskDetail,
+} from "@/lib/coach-review/ask";
+import { coachReviewById, hydrateCoachReviews } from "@/lib/coach-review/store";
+import { SESSION_ASK_EVENT } from "@/lib/session-note/ask";
+import {
+  getOpenSessionNote,
+  sessionNoteContext,
+} from "@/lib/session-note/store";
 import { ChatMarkdown } from "@/components/app/chat-markdown";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
@@ -37,6 +53,11 @@ type ChatMessage = {
 };
 
 export function AskPotential() {
+  const user = useAppUser();
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const buildReviewId = searchParams.get(BUILD_REVIEW_PARAM);
   const [open, setOpen] = useState(false);
   const [ready, setReady] = useState(true);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -46,6 +67,11 @@ export function AskPotential() {
   const [error, setError] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
+  const sendRef = useRef<
+    (content: string, options?: { intent?: "build-block" | "session" }) => Promise<void>
+  >(async () => {});
+  const busyRef = useRef(false);
+  const consumedBuild = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -131,11 +157,58 @@ export function AskPotential() {
         return;
       }
       setOpen(true);
-      void sendMessage(detail.message);
+      void sendRef.current(detail.message);
+    }
+    function onReview(event: Event) {
+      const detail = (event as CustomEvent<CoachReviewAskDetail>).detail;
+      if (!detail?.message) {
+        return;
+      }
+      setOpen(true);
+      void sendRef.current(detail.message);
+    }
+    function onSession(event: Event) {
+      const detail = (event as CustomEvent<{ message?: string }>).detail;
+      if (!detail?.message) {
+        return;
+      }
+      setOpen(true);
+      void sendRef.current(detail.message, { intent: "session" });
     }
     window.addEventListener(DIRECTION_ASK_EVENT, onAsk);
-    return () => window.removeEventListener(DIRECTION_ASK_EVENT, onAsk);
-  }, [busy, conversationId]);
+    window.addEventListener(COACH_REVIEW_ASK_EVENT, onReview);
+    window.addEventListener(SESSION_ASK_EVENT, onSession);
+    return () => {
+      window.removeEventListener(DIRECTION_ASK_EVENT, onAsk);
+      window.removeEventListener(COACH_REVIEW_ASK_EVENT, onReview);
+      window.removeEventListener(SESSION_ASK_EVENT, onSession);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!buildReviewId) {
+      consumedBuild.current = null;
+      return;
+    }
+    if (consumedBuild.current === buildReviewId) {
+      return;
+    }
+    consumedBuild.current = buildReviewId;
+    router.replace(pathname, { scroll: false });
+    void (async () => {
+      let review = coachReviewById(user.id, buildReviewId);
+      if (!review) {
+        const rows = await hydrateCoachReviews(user.id);
+        review = rows.find((row) => row.id === buildReviewId) ?? null;
+      }
+      if (!review) {
+        return;
+      }
+      setCoachReviewSelection(review.id);
+      setOpen(true);
+      await sendRef.current(buildBlockMessage(), { intent: "build-block" });
+    })();
+  }, [buildReviewId, pathname, router, user.id]);
 
   async function send(event: FormEvent) {
     event.preventDefault();
@@ -147,10 +220,14 @@ export function AskPotential() {
     await sendMessage(content);
   }
 
-  async function sendMessage(content: string) {
-    if (!content || busy) {
+  async function sendMessage(
+    content: string,
+    options?: { intent?: "build-block" | "session" },
+  ) {
+    if (!content || busyRef.current) {
       return;
     }
+    busyRef.current = true;
     setError(null);
     setBusy(true);
     const pendingId = `local-${Date.now()}`;
@@ -160,6 +237,7 @@ export function AskPotential() {
       { id: `${pendingId}-reply`, role: "assistant", content: "", proposal: null },
     ]);
     try {
+      const sessionNote = sessionNoteContext(getOpenSessionNote());
       const response = await invokePotentialAi({
         conversationId,
         message: content,
@@ -172,6 +250,9 @@ export function AskPotential() {
                 direction: getDirectionSelection() ?? undefined,
               }
             : {}),
+          coachReview: coachReviewContext(user.id),
+          ...(sessionNote ? { sessionNote } : {}),
+          ...(options?.intent ? { intent: options.intent } : {}),
         },
       });
       const reader = response.body!.getReader();
@@ -268,9 +349,12 @@ export function AskPotential() {
       );
       setDraft(content);
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   }
+
+  sendRef.current = sendMessage;
 
   async function applyProposal(message: ChatMessage) {
     if (!message.proposal || message.proposal.status !== "pending") {

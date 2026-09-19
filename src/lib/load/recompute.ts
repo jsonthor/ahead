@@ -1,4 +1,11 @@
-import type { Json } from "@/lib/database.types";
+import { dateKeyInZone } from "@/lib/calendar";
+import { readActivityStream } from "@/lib/fit/stream-store";
+import { activityMetricsWrite } from "@/lib/ingest/persist";
+import { loadHrModelHistory } from "@/lib/hr-model/store";
+import {
+  refreshAthleteHrModelHistory,
+  resolveHrModelFromHistory,
+} from "@/lib/hr-model/resolve";
 import { deriveActivityMetrics } from "@/lib/load/derive";
 import { recomputeDailyLoads } from "@/lib/load/banister";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -7,6 +14,8 @@ import type { WorkoutSport } from "@/lib/workout";
 
 type ActivitySummaryRow = {
   id: string;
+  source_activity_id: string;
+  started_at: string;
   sport: string;
   duration_seconds: number | null;
   distance_m: number | null;
@@ -27,13 +36,29 @@ type LapRow = {
   avg_power: number | null;
 };
 
-export async function recomputeAthleteSummaryLoads(athleteId: string, timeZone: string) {
+export type RecomputeProgress = {
+  phase: "sessions" | "daily";
+  processed: number;
+  total: number;
+};
+
+export async function recomputeAthleteSummaryLoads(
+  athleteId: string,
+  timeZone: string,
+  options?: {
+    refreshModel?: boolean;
+    onProgress?: (progress: RecomputeProgress) => void | Promise<void>;
+  },
+) {
+  if (options?.refreshModel !== false) {
+    await refreshAthleteHrModelHistory(athleteId, timeZone);
+  }
   const admin = createAdminClient();
   const data = await fetchAllRows<ActivitySummaryRow>((from, to) =>
     admin
       .from("activities")
       .select(
-        "id, sport, duration_seconds, distance_m, avg_hr, max_hr, avg_power, normalized_power, avg_speed_mps, rpe, session_type, raw_fit_key",
+        "id, source_activity_id, started_at, sport, duration_seconds, distance_m, avg_hr, max_hr, avg_power, normalized_power, avg_speed_mps, rpe, session_type, raw_fit_key",
       )
       .eq("athlete_id", athleteId)
       .eq("intelligence_eligible", true)
@@ -52,7 +77,15 @@ export async function recomputeAthleteSummaryLoads(athleteId: string, timeZone: 
     current.push(lap);
     lapsByActivity.set(lap.activity_id, current);
   }
+  const history = await loadHrModelHistory(athleteId);
+  let processed = 0;
   for (const row of data) {
+    const activityDate = dateKeyInZone(new Date(row.started_at), timeZone);
+    const hrModel = resolveHrModelFromHistory(history, activityDate);
+    const stream = await readActivityStream({
+      athleteId,
+      sourceActivityId: row.source_activity_id,
+    });
     const activityLaps = lapsByActivity.get(row.id) ?? [];
     const metrics = deriveActivityMetrics({
       sport: row.sport as WorkoutSport,
@@ -64,7 +97,9 @@ export async function recomputeAthleteSummaryLoads(athleteId: string, timeZone: 
       avgSpeedMps: row.avg_speed_mps,
       rpe: row.rpe,
       sessionType: row.session_type,
-      hrMax: row.max_hr,
+      stream: stream ?? undefined,
+      hrModel,
+      sessionMaxHr: row.max_hr,
       hasFit: Boolean(row.raw_fit_key),
       hasLaps: activityLaps.length > 0,
       laps: activityLaps.map((lap) => ({
@@ -73,23 +108,26 @@ export async function recomputeAthleteSummaryLoads(athleteId: string, timeZone: 
         avgPower: lap.avg_power,
       })),
     });
-    const { error: upsertError } = await admin.from("activity_metrics").upsert({
-      activity_id: row.id,
-      potential_load: metrics.potential_load,
-      intensity: metrics.intensity,
-      aerobic_load: metrics.aerobic_load,
-      specific_load: metrics.specific_load,
-      hr_zone_seconds: metrics.hr_zone_seconds as unknown as Json,
-      training_mix: metrics.training_mix as unknown as Json,
-      load_method: metrics.load_method,
-      data_quality: metrics.data_quality,
-      capabilities: metrics.capabilities as unknown as Json,
-      formula_version: metrics.formula_version,
-    });
+    const { error: upsertError } = await admin
+      .from("activity_metrics")
+      .upsert(activityMetricsWrite(row.id, metrics));
     if (upsertError) {
       console.error("Summary load upsert failed", { id: row.id, upsertError });
     }
+    processed += 1;
+    if (processed === 1 || processed === data.length || processed % 5 === 0) {
+      await options?.onProgress?.({
+        phase: "sessions",
+        processed,
+        total: data.length,
+      });
+    }
   }
+  await options?.onProgress?.({
+    phase: "daily",
+    processed: data.length,
+    total: data.length,
+  });
   return recomputeDailyLoads(athleteId, timeZone);
 }
 

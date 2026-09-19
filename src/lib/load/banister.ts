@@ -5,6 +5,7 @@ import type { TrainingMix } from "@/lib/load/derive";
 import {
   calculatePotentialSeries,
   isPotentialCalibration,
+  POTENTIAL_VERSION,
   recoveryDelta,
 } from "@/lib/load/potential";
 import {
@@ -14,7 +15,7 @@ import {
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAllRows } from "@/lib/supabase/page";
 
-export const DAILY_FORMULA_VERSION = `${TRAINING_STATE_VERSION}+potential-v0.4`;
+export const DAILY_FORMULA_VERSION = `${TRAINING_STATE_VERSION}+${POTENTIAL_VERSION}`;
 
 const UPSERT_CHUNK = 500;
 

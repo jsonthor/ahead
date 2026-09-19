@@ -24,6 +24,91 @@ export function chatModelReady() {
   return Boolean(anthropicKey() || openaiKey());
 }
 
+export function coachReviewModel() {
+  return (
+    process.env.COACH_REVIEW_MODEL?.trim() ||
+    process.env.CHAT_MODEL?.trim() ||
+    (anthropicKey() ? "claude-sonnet-4-5" : "gpt-4.1")
+  );
+}
+
+export async function completeJson(input: { system: string; user: string }) {
+  if (anthropicKey()) {
+    return completeAnthropicJson(input);
+  }
+  if (openaiKey()) {
+    return completeOpenAIJson(input);
+  }
+  throw new Error("Coach Review needs ANTHROPIC_API_KEY or OPENAI_API_KEY on the server.");
+}
+
+function parseJsonObject(text: string) {
+  const trimmed = text.trim();
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const raw = fenced?.[1]?.trim() || trimmed;
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start < 0 || end <= start) {
+    throw new Error("Coach Review did not return a review object.");
+  }
+  return JSON.parse(raw.slice(start, end + 1)) as Record<string, unknown>;
+}
+
+async function completeAnthropicJson(input: { system: string; user: string }) {
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": anthropicKey(),
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: coachReviewModel(),
+      max_tokens: 4096,
+      system: input.system,
+      messages: [{ role: "user", content: input.user }],
+    }),
+  });
+  const body = (await response.json().catch(() => null)) as {
+    content?: { type?: string; text?: string }[];
+    error?: { message?: string };
+  } | null;
+  if (!response.ok) {
+    throw new Error(body?.error?.message || `Model request failed (${response.status}).`);
+  }
+  const text = (body?.content ?? [])
+    .filter((block) => block.type === "text" && block.text)
+    .map((block) => block.text)
+    .join("\n");
+  return parseJsonObject(text);
+}
+
+async function completeOpenAIJson(input: { system: string; user: string }) {
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${openaiKey()}`,
+    },
+    body: JSON.stringify({
+      model: coachReviewModel(),
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: input.system },
+        { role: "user", content: input.user },
+      ],
+    }),
+  });
+  const body = (await response.json().catch(() => null)) as {
+    choices?: { message?: { content?: string } }[];
+    error?: { message?: string };
+  } | null;
+  if (!response.ok) {
+    throw new Error(body?.error?.message || `Model request failed (${response.status}).`);
+  }
+  return parseJsonObject(body?.choices?.[0]?.message?.content ?? "");
+}
+
 export async function* runChatTurn(input: {
   client: Client;
   athleteId: string;

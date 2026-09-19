@@ -34,6 +34,30 @@ export async function potentialAiReady() {
   }
 }
 
+export async function invokeCoachReview(input: {
+  packet: unknown;
+  previousReview?: unknown;
+}) {
+  const headers = await authHeaders();
+  const response = await fetch(functionUrl("potential-ai"), {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      mode: "coach-review",
+      packet: input.packet,
+      previousReview: input.previousReview ?? null,
+    }),
+  });
+  const body = (await response.json().catch(() => null)) as {
+    review?: Record<string, unknown>;
+    message?: string;
+  } | null;
+  if (!response.ok || !body?.review) {
+    throw new Error(body?.message || "Could not write the review.");
+  }
+  return body.review;
+}
+
 export async function invokePotentialAi(input: {
   conversationId: string | null;
   message: string;
@@ -48,6 +72,9 @@ export async function invokePotentialAi(input: {
       score: number | null;
       conclusion: string;
     };
+    coachReview?: import("@/lib/coach-review/ask").CoachReviewContext;
+    sessionNote?: import("@/lib/session-note/types").SessionNoteContext;
+    intent?: "build-block" | "session";
   };
 }) {
   const headers = await authHeaders();

@@ -1,9 +1,11 @@
 import { gzipSync } from "node:zlib";
+import { dateKeyInZone } from "@/lib/calendar";
 import type { MappedActivity } from "@/lib/coros/map";
 import type { Json } from "@/lib/database.types";
 import { activityStreamPath } from "@/lib/fit/stream";
 import type { StreamPoint } from "@/lib/fit/parse";
-import { deriveActivityMetrics } from "@/lib/load/derive";
+import { noteProviderProfileHrMax, resolveHrModel } from "@/lib/hr-model/resolve";
+import { deriveActivityMetrics, type DerivedActivityMetrics } from "@/lib/load/derive";
 import { assignActivityRoute } from "@/lib/route/assign";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -46,6 +48,8 @@ export async function storeActivityStream(input: {
   return path;
 }
 
+export { readActivityStream } from "@/lib/fit/stream-store";
+
 export async function upsertImportedActivity(
   athleteId: string,
   activity: MappedActivity,
@@ -71,41 +75,11 @@ export async function upsertImportedActivity(
   return data;
 }
 
-export async function upsertImportedMetrics(
+export function activityMetricsWrite(
   activityId: string,
-  activity: MappedActivity,
-  stream: StreamPoint[] | undefined,
-  extra?: {
-    hrMax?: number | null;
-    hasFit?: boolean;
-    hasLaps?: boolean;
-    laps?: {
-      duration_seconds: number | null;
-      avg_hr: number | null;
-      avg_power: number | null;
-    }[];
-  },
+  metrics: DerivedActivityMetrics,
 ) {
-  const metrics = deriveActivityMetrics({
-    sport: activity.sport,
-    durationSeconds: activity.duration_seconds,
-    distanceM: activity.distance_m,
-    avgHr: activity.avg_hr,
-    avgPower: activity.avg_power,
-    normalizedPower: activity.normalized_power,
-    avgSpeedMps: activity.avg_speed_mps,
-    stream,
-    hrMax: extra?.hrMax ?? activity.max_hr,
-    hasFit: extra?.hasFit,
-    hasLaps: extra?.hasLaps || (extra?.laps?.length ?? 0) > 0,
-    laps: extra?.laps?.map((lap) => ({
-      durationSeconds: lap.duration_seconds,
-      avgHr: lap.avg_hr,
-      avgPower: lap.avg_power,
-    })),
-  });
-  const admin = createAdminClient();
-  const { error } = await admin.from("activity_metrics").upsert({
+  return {
     activity_id: activityId,
     potential_load: metrics.potential_load,
     intensity: metrics.intensity,
@@ -117,7 +91,75 @@ export async function upsertImportedMetrics(
     data_quality: metrics.data_quality,
     capabilities: metrics.capabilities as unknown as Json,
     formula_version: metrics.formula_version,
+    hr_model_max: metrics.hr_model.hrMax,
+    hr_model_source: metrics.hr_model.source,
+    hr_model_confidence: metrics.hr_model.confidence,
+    hr_z1_max: metrics.hr_z1_max,
+    hr_z2_max: metrics.hr_z2_max,
+    hr_z3_max: metrics.hr_z3_max,
+    hr_z4_max: metrics.hr_z4_max,
+    hr_zone_model_version: metrics.hr_model.version,
+    threshold_hr: metrics.threshold_hr,
+    threshold_source: metrics.hr_model.thresholdSource,
+    threshold_confidence: metrics.hr_model.thresholdConfidence,
+    zone_method: metrics.zone_method,
+    intensity_classification: metrics.intensity_classification.status,
+    intensity_classification_reason: metrics.intensity_classification.reason,
+  };
+}
+
+export async function upsertImportedMetrics(
+  activityId: string,
+  activity: MappedActivity,
+  stream: StreamPoint[] | undefined,
+  extra: {
+    athleteId: string;
+    timeZone: string;
+    providerProfileHrMax?: number | null;
+    hasFit?: boolean;
+    hasLaps?: boolean;
+    rpe?: number | null;
+    sessionType?: string | null;
+    laps?: {
+      duration_seconds: number | null;
+      avg_hr: number | null;
+      avg_power: number | null;
+    }[];
+  },
+) {
+  const activityDate = dateKeyInZone(new Date(activity.started_at), extra.timeZone);
+  await noteProviderProfileHrMax({
+    athleteId: extra.athleteId,
+    activityDate,
+    providerProfileHrMax: extra.providerProfileHrMax,
+    sessionMaxHr: activity.max_hr,
   });
+  const hrModel = await resolveHrModel(extra.athleteId, activityDate);
+  const metrics = deriveActivityMetrics({
+    sport: activity.sport,
+    durationSeconds: activity.duration_seconds,
+    distanceM: activity.distance_m,
+    avgHr: activity.avg_hr,
+    avgPower: activity.avg_power,
+    normalizedPower: activity.normalized_power,
+    avgSpeedMps: activity.avg_speed_mps,
+    rpe: extra.rpe,
+    sessionType: extra.sessionType,
+    stream,
+    hrModel,
+    sessionMaxHr: activity.max_hr,
+    hasFit: extra.hasFit,
+    hasLaps: extra.hasLaps || (extra.laps?.length ?? 0) > 0,
+    laps: extra.laps?.map((lap) => ({
+      durationSeconds: lap.duration_seconds,
+      avgHr: lap.avg_hr,
+      avgPower: lap.avg_power,
+    })),
+  });
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("activity_metrics")
+    .upsert(activityMetricsWrite(activityId, metrics));
   if (error) {
     throw error;
   }

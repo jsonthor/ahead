@@ -9,6 +9,7 @@ import { corsHeaders, jsonResponse, optionsResponse } from "../_shared/cors.ts";
 import { openaiKey, requireUser, userClient } from "../_shared/client.ts";
 import {
   createChatResponse,
+  createCoachReviewResponse,
   functionCalls,
   LUNA_MODEL,
   outputText,
@@ -21,6 +22,7 @@ import {
   turnContextText,
   userInputMessage,
 } from "../_shared/prompt.ts";
+import { athleteGoals } from "../_shared/goals.ts";
 import { executeTool } from "../_shared/tools.ts";
 
 const HISTORY_CAP = 12;
@@ -37,6 +39,13 @@ type UiContext = {
     score: number | null;
     conclusion: string;
   };
+  coachReview?: {
+    current?: Record<string, unknown> | null;
+    previous?: unknown[];
+    latestWeek?: Record<string, unknown> | null;
+  };
+  sessionNote?: Record<string, unknown> | null;
+  intent?: "build-block" | "session";
 };
 
 function slimMemories(rows: unknown) {
@@ -87,10 +96,50 @@ Deno.serve(async (req) => {
   }
 
   const body = (await req.json().catch(() => null)) as {
+    mode?: string;
     conversationId?: string | null;
     message?: string;
     uiContext?: UiContext;
+    packet?: unknown;
+    previousReview?: unknown;
   } | null;
+
+  if (body?.mode === "coach-review") {
+    try {
+      const response = await createCoachReviewResponse([
+        userInputMessage(
+          JSON.stringify({
+            packet: body.packet ?? null,
+            previousReview: body.previousReview ?? null,
+          }),
+        ),
+      ]);
+      const text = outputText(response);
+      if (response.error?.message) {
+        throw new Error(response.error.message);
+      }
+      if (!text.trim()) {
+        throw new Error("Coach Review returned an empty answer. Try again.");
+      }
+      let review: unknown;
+      try {
+        review = JSON.parse(text);
+      } catch {
+        throw new Error("Coach Review did not return a review object.");
+      }
+      return jsonResponse({ review });
+    } catch (error) {
+      console.error("coach-review failed", error);
+      return jsonResponse(
+        {
+          error: "generate",
+          message: error instanceof Error ? error.message : "Could not write the review.",
+        },
+        500,
+      );
+    }
+  }
+
   const message = body?.message?.trim() ?? "";
   if (!message) {
     return jsonResponse({ error: "empty" }, 400);
@@ -176,6 +225,7 @@ Deno.serve(async (req) => {
       name: profile?.display_name ?? "Athlete",
       units: profile?.units ?? "metric",
       ...(athleteAge(profile?.date_of_birth, new Date(), timeZone) ?? {}),
+      goals: athleteGoals(profile?.onboarding),
     },
     direction: {
       state: direction.state,
@@ -199,7 +249,7 @@ Deno.serve(async (req) => {
     relevantMemories: slimMemories(memories),
   };
   const userTurn = turnContextText(turnContext, message);
-  const escalate = shouldEscalateToTerra(message);
+  const escalate = shouldEscalateToTerra(message, body?.uiContext?.intent);
   const model = escalate ? TERRA_MODEL : LUNA_MODEL;
   const reasoning = escalate ? "medium" : "low";
 

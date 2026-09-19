@@ -165,7 +165,7 @@ async function parseItem(item: WorkItem) {
       }),
       stream: parsed.stream,
       laps: parsed.laps,
-      hrMax: parsed.summary.profile_hr_max ?? parsed.summary.max_hr,
+      providerProfileHrMax: parsed.summary.profile_hr_max,
     };
   }
   const xml = item.bytes.toString("utf8");
@@ -193,7 +193,7 @@ async function parseItem(item: WorkItem) {
     }),
     stream: parsed.stream,
     laps: parsed.laps,
-    hrMax: parsed.maxHr,
+    providerProfileHrMax: null,
   };
 }
 
@@ -278,7 +278,9 @@ export async function importUploadedFiles(input: {
           raw_fit_key: rawKey,
         });
         await upsertImportedMetrics(row.id, parsed.activity, parsed.stream, {
-          hrMax: parsed.hrMax,
+          athleteId: input.athleteId,
+          timeZone,
+          providerProfileHrMax: parsed.providerProfileHrMax,
           hasFit: item.source === "fit",
           hasLaps: parsed.laps.length > 0,
           laps: parsed.laps,

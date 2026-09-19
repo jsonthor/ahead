@@ -15,6 +15,7 @@ type ProfileRow = {
   onboarding: Json | null;
   potential_calibration: Json | null;
   assistant_memory: Json | null;
+  hr_zone_notices: Json;
   created_at: string;
   updated_at: string;
 };
@@ -200,6 +201,46 @@ type AgentActionRow = {
   undone_at: string | null;
 };
 
+type AthleteHrModelRow = {
+  id: string;
+  athlete_id: string;
+  hr_max: number;
+  source: string;
+  confidence: string;
+  cycling_lthr: number | null;
+  running_lthr: number | null;
+  threshold_source: string | null;
+  threshold_confidence: string | null;
+  valid_from: string;
+  valid_to: string | null;
+  provider: string | null;
+  provider_value_reference: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type ActivitySessionNoteRow = {
+  activity_id: string;
+  athlete_id: string;
+  note: Json;
+  composed_at: string;
+  updated_at: string;
+};
+
+type CoachReviewRow = {
+  id: string;
+  athlete_id: string;
+  kind: string;
+  period_start: string;
+  period_end: string;
+  source: string | null;
+  title: string;
+  review: Json;
+  created_at: string;
+  completed_at: string;
+  updated_at: string;
+};
+
 type DailyLoadRow = {
   id: string;
   athlete_id: string;
@@ -272,6 +313,7 @@ export type Database = {
           onboarding?: Json | null;
           potential_calibration?: Json | null;
           assistant_memory?: Json | null;
+          hr_zone_notices?: Json;
           created_at?: string;
           updated_at?: string;
         };
@@ -409,6 +451,20 @@ export type Database = {
           data_quality: string | null;
           capabilities: Json | null;
           formula_version: string | null;
+          hr_model_max: number | null;
+          hr_model_source: string | null;
+          hr_model_confidence: string | null;
+          hr_z1_max: number | null;
+          hr_z2_max: number | null;
+          hr_z3_max: number | null;
+          hr_z4_max: number | null;
+          hr_zone_model_version: string | null;
+          threshold_hr: number | null;
+          threshold_source: string | null;
+          threshold_confidence: string | null;
+          zone_method: string | null;
+          intensity_classification: string | null;
+          intensity_classification_reason: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -424,6 +480,20 @@ export type Database = {
           data_quality?: string | null;
           capabilities?: Json | null;
           formula_version?: string | null;
+          hr_model_max?: number | null;
+          hr_model_source?: string | null;
+          hr_model_confidence?: string | null;
+          hr_z1_max?: number | null;
+          hr_z2_max?: number | null;
+          hr_z3_max?: number | null;
+          hr_z4_max?: number | null;
+          hr_zone_model_version?: string | null;
+          threshold_hr?: number | null;
+          threshold_source?: string | null;
+          threshold_confidence?: string | null;
+          zone_method?: string | null;
+          intensity_classification?: string | null;
+          intensity_classification_reason?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -438,6 +508,20 @@ export type Database = {
           data_quality?: string | null;
           capabilities?: Json | null;
           formula_version?: string | null;
+          hr_model_max?: number | null;
+          hr_model_source?: string | null;
+          hr_model_confidence?: string | null;
+          hr_z1_max?: number | null;
+          hr_z2_max?: number | null;
+          hr_z3_max?: number | null;
+          hr_z4_max?: number | null;
+          hr_zone_model_version?: string | null;
+          threshold_hr?: number | null;
+          threshold_source?: string | null;
+          threshold_confidence?: string | null;
+          zone_method?: string | null;
+          intensity_classification?: string | null;
+          intensity_classification_reason?: string | null;
         };
         Relationships: [
           {
@@ -657,6 +741,58 @@ export type Database = {
           expires_at?: string;
         };
         Update: Partial<CalendarProposalRow>;
+        Relationships: [];
+      };
+      athlete_hr_models: {
+        Row: AthleteHrModelRow;
+        Insert: {
+          id?: string;
+          athlete_id: string;
+          hr_max: number;
+          source: string;
+          confidence: string;
+          cycling_lthr?: number | null;
+          running_lthr?: number | null;
+          threshold_source?: string | null;
+          threshold_confidence?: string | null;
+          valid_from: string;
+          valid_to?: string | null;
+          provider?: string | null;
+          provider_value_reference?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<AthleteHrModelRow>;
+        Relationships: [];
+      };
+      activity_session_notes: {
+        Row: ActivitySessionNoteRow;
+        Insert: {
+          activity_id: string;
+          athlete_id: string;
+          note: Json;
+          composed_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<ActivitySessionNoteRow>;
+        Relationships: [];
+      };
+      coach_reviews: {
+        Row: CoachReviewRow;
+        Insert: {
+          id: string;
+          athlete_id: string;
+          kind?: string;
+          period_start: string;
+          period_end: string;
+          source?: string | null;
+          title: string;
+          review: Json;
+          created_at?: string;
+          completed_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<CoachReviewRow>;
         Relationships: [];
       };
       agent_actions: {

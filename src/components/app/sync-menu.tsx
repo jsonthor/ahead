@@ -65,7 +65,7 @@ function headerStatus(sync: SyncState) {
     case "activities":
       return "Getting activities";
     case "fit":
-      return "Saving sessions";
+      return "Getting workout files";
     case "wellness":
       return "Getting recovery";
     case "load":

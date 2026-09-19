@@ -1,7 +1,9 @@
 "use client";
 
+import { CoachReviewCard } from "@/components/app/coach-review-card";
 import { DashboardMetrics } from "@/components/app/dashboard-metrics";
 import { ProfileCompletion } from "@/components/app/profile-completion";
+import { ZoneNoticeCard } from "@/components/app/zone-notice";
 import { useAppUser } from "@/components/app/app-shell";
 import { hourInZone } from "@/lib/calendar";
 
@@ -26,6 +28,8 @@ export default function AppHomePage() {
         {greetingForNow(user.timezone)} {user.displayName}.
       </h1>
       <ProfileCompletion />
+      <ZoneNoticeCard />
+      <CoachReviewCard />
       <DashboardMetrics />
     </main>
   );

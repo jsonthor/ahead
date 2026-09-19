@@ -2,6 +2,7 @@
 
 import { ActivityMap } from "@/components/app/activity-map";
 import { RouteHistory } from "@/components/app/route-history";
+import { SessionNoteCard } from "@/components/app/session-note";
 import { useAppUser } from "@/components/app/app-shell";
 import { StreamChart } from "@/components/app/stream-chart";
 import { formatActivityWhen } from "@/lib/calendar";
@@ -48,6 +49,17 @@ type Metrics = {
   training_mix: Json | null;
   load_method: LoadMethod | null;
   data_quality: DataQuality | null;
+  hr_model_max: number | null;
+  hr_model_source: string | null;
+  hr_model_confidence: string | null;
+  hr_z1_max: number | null;
+  hr_z2_max: number | null;
+  hr_z3_max: number | null;
+  hr_z4_max: number | null;
+  threshold_hr: number | null;
+  zone_method: string | null;
+  intensity_classification: string | null;
+  intensity_classification_reason: string | null;
 };
 
 type Lap = {
@@ -220,7 +232,17 @@ function MixBar({ mix }: { mix: Mix }) {
   );
 }
 
-function ZoneBar({ zones }: { zones: Zones }) {
+function ZoneBar({
+  zones,
+  method,
+  thresholdHr,
+  hrMax,
+}: {
+  zones: Zones;
+  method?: string | null;
+  thresholdHr?: number | null;
+  hrMax?: number | null;
+}) {
   const total = zones.z1 + zones.z2 + zones.z3 + zones.z4 + zones.z5;
   if (total <= 0) {
     return null;
@@ -234,7 +256,14 @@ function ZoneBar({ zones }: { zones: Zones }) {
   ];
   return (
     <div className="rounded-md border border-line bg-paper-raised p-4">
-      <p className="kicker">Heart rate zones</p>
+      <p className="kicker">
+        Heart rate zones
+        {method === "lthr" && thresholdHr
+          ? ` · threshold ${thresholdHr}`
+          : method === "pct-max" && hrMax
+            ? ` · % HRmax ${hrMax}`
+            : ""}
+      </p>
       <div className="mt-3 flex h-3 overflow-hidden rounded-sm">
         {parts.map((part) =>
           part.seconds > 0 ? (
@@ -261,7 +290,7 @@ function ZoneBar({ zones }: { zones: Zones }) {
 export function ActivityDetail({ id }: { id: string }) {
   const user = useAppUser();
   const [activity, setActivity] = useState<Activity | null | undefined>(undefined);
-  const [event, setEvent] = useState<CalendarEvent | null>(null);
+  const [event, setEvent] = useState<CalendarEvent | null | undefined>(undefined);
   const [stream, setStream] = useState<StreamPoint[]>([]);
   const [streamError, setStreamError] = useState<string | null>(null);
 
@@ -269,11 +298,11 @@ export function ActivityDetail({ id }: { id: string }) {
     const supabase = createClient();
     let cancelled = false;
     setActivity(undefined);
-    setEvent(null);
+    setEvent(undefined);
     void supabase
       .from("activities")
       .select(
-        "id, source, sport, subsport, started_at, duration_seconds, elapsed_seconds, moving_seconds, distance_m, elevation_m, avg_hr, max_hr, avg_power, max_power, normalized_power, avg_cadence, avg_speed_mps, session_type, activity_metrics(potential_load, intensity, aerobic_load, specific_load, hr_zone_seconds, training_mix, load_method, data_quality), activity_laps(id, source_index, duration_seconds, distance_m, avg_hr, avg_power)",
+        "id, source, sport, subsport, started_at, duration_seconds, elapsed_seconds, moving_seconds, distance_m, elevation_m, avg_hr, max_hr, avg_power, max_power, normalized_power, avg_cadence, avg_speed_mps, session_type, activity_metrics(potential_load, intensity, aerobic_load, specific_load, hr_zone_seconds, training_mix, load_method, data_quality, hr_model_max, hr_model_source, hr_model_confidence, hr_z1_max, hr_z2_max, hr_z3_max, hr_z4_max, threshold_hr, zone_method, intensity_classification, intensity_classification_reason), activity_laps(id, source_index, duration_seconds, distance_m, avg_hr, avg_power)",
       )
       .eq("id", id)
       .maybeSingle()
@@ -330,7 +359,7 @@ export function ActivityDetail({ id }: { id: string }) {
         const { data } = await supabase
           .from("activities")
           .select(
-            "id, source, sport, subsport, started_at, duration_seconds, elapsed_seconds, moving_seconds, distance_m, elevation_m, avg_hr, max_hr, avg_power, max_power, normalized_power, avg_cadence, avg_speed_mps, session_type, activity_metrics(potential_load, intensity, aerobic_load, specific_load, hr_zone_seconds, training_mix, load_method, data_quality), activity_laps(id, source_index, duration_seconds, distance_m, avg_hr, avg_power)",
+            "id, source, sport, subsport, started_at, duration_seconds, elapsed_seconds, moving_seconds, distance_m, elevation_m, avg_hr, max_hr, avg_power, max_power, normalized_power, avg_cadence, avg_speed_mps, session_type, activity_metrics(potential_load, intensity, aerobic_load, specific_load, hr_zone_seconds, training_mix, load_method, data_quality, hr_model_max, hr_model_source, hr_model_confidence, hr_z1_max, hr_z2_max, hr_z3_max, hr_z4_max, threshold_hr, zone_method, intensity_classification, intensity_classification_reason), activity_laps(id, source_index, duration_seconds, distance_m, avg_hr, avg_power)",
           )
           .eq("id", id)
           .maybeSingle();
@@ -422,11 +451,15 @@ export function ActivityDetail({ id }: { id: string }) {
         {event?.importance ? ` · ${event.importance}` : ""}
       </p>
       <Dialog.Title className="title mt-2 text-[2rem] text-ink">
-        {titleFor(activity, event)}
+        {titleFor(activity, event ?? null)}
       </Dialog.Title>
       <Dialog.Description className="mt-2 text-[15px] text-ink-soft">
         {formatActivityWhen(activity.started_at, user.timezone)}
       </Dialog.Description>
+
+      {event !== undefined ? (
+        <SessionNoteCard activity={activity} event={event} />
+      ) : null}
 
       {charts?.gps && charts.gps.length > 1 ? (
         <div className="mt-6">
@@ -474,9 +507,35 @@ export function ActivityDetail({ id }: { id: string }) {
         />
       </div>
 
+      {metrics?.intensity_classification === "unavailable" ? (
+        <p className="mt-8 border border-line bg-paper-raised px-5 py-4 text-sm leading-6 text-ink">
+          Heart-rate zones unavailable. Ahead doesn&apos;t yet have a reliable
+          maximum for this athlete. Average and session-peak heart rate are
+          still shown.
+        </p>
+      ) : metrics?.intensity_classification === "uncertain" ? (
+        <p className="mt-8 border border-line bg-paper-raised px-5 py-4 text-sm leading-6 text-ink">
+          Heart-rate zones may need calibration.
+          {metrics.intensity_classification_reason
+            ? ` ${metrics.intensity_classification_reason}.`
+            : ""}{" "}
+          Intensity from these zones is not trusted enough to interpret this
+          session.
+        </p>
+      ) : null}
+
       <div className="mt-8 grid gap-4 lg:grid-cols-2">
-        {mix ? <MixBar mix={mix} /> : null}
-        {zones ? <ZoneBar zones={zones} /> : null}
+        {mix && metrics?.intensity_classification !== "unavailable" ? (
+          <MixBar mix={mix} />
+        ) : null}
+        {zones && metrics?.intensity_classification !== "unavailable" ? (
+          <ZoneBar
+            zones={zones}
+            method={metrics?.zone_method}
+            thresholdHr={metrics?.threshold_hr}
+            hrMax={metrics?.hr_model_max}
+          />
+        ) : null}
       </div>
 
       <div className="mt-8 grid gap-4">
