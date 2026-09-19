@@ -41,7 +41,15 @@ import {
 } from "@/lib/recovery";
 import { formatDistance, formatDuration, formatElevation, type Units } from "@/lib/units";
 import { ACTIVITY_PARAM } from "@/lib/activity-modal";
+import {
+  COMPARE_CLOSED_EVENT,
+  COMPARE_MAX,
+  COMPARE_PARAM,
+  COMPARE_TONES,
+  toggleCompareId,
+} from "@/lib/activity-compare";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type Metrics = { potential_load: number | null } | { potential_load: number | null }[] | null;
@@ -93,6 +101,8 @@ function navButtonClass(active = false) {
 
 export function WeekCalendar() {
   const user = useAppUser();
+  const router = useRouter();
+  const pathname = usePathname();
   const [month, setMonth] = useState(() =>
     monthKeyInZone(new Date(), user.timezone),
   );
@@ -108,6 +118,8 @@ export function WeekCalendar() {
   );
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropKey, setDropKey] = useState<string | null>(null);
+  const [comparing, setComparing] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
   const todayKey = dateKeyInZone(new Date(), user.timezone);
   const thisMonth = monthKeyInZone(new Date(), user.timezone);
 
@@ -115,6 +127,15 @@ export function WeekCalendar() {
     if (window.localStorage.getItem(WELLNESS_KEY) === "off") {
       setShowWellness(false);
     }
+  }, []);
+
+  useEffect(() => {
+    function onClosed() {
+      setComparing(false);
+      setSelected([]);
+    }
+    window.addEventListener(COMPARE_CLOSED_EVENT, onClosed);
+    return () => window.removeEventListener(COMPARE_CLOSED_EVENT, onClosed);
   }, []);
 
   useEffect(() => {
@@ -260,7 +281,7 @@ export function WeekCalendar() {
   );
 
   return (
-    <section>
+    <section className={comparing ? "pb-20" : undefined}>
       <div className="grid items-end gap-4 sm:grid-cols-[1fr_auto_1fr]">
         <div>
           <p className="kicker">
@@ -270,13 +291,34 @@ export function WeekCalendar() {
             {formatMonthTitle(month)}
           </h1>
         </div>
-        <WellnessSwitch
-          on={showWellness}
-          onChange={(next) => {
-            setShowWellness(next);
-            window.localStorage.setItem(WELLNESS_KEY, next ? "on" : "off");
-          }}
-        />
+        <div className="flex flex-wrap items-center justify-self-start gap-4 sm:justify-self-center">
+          <WellnessSwitch
+            on={showWellness}
+            onChange={(next) => {
+              setShowWellness(next);
+              window.localStorage.setItem(WELLNESS_KEY, next ? "on" : "off");
+            }}
+          />
+          <button
+            type="button"
+            aria-pressed={comparing}
+            onClick={() => {
+              setComparing((on) => {
+                if (on) {
+                  setSelected([]);
+                }
+                return !on;
+              });
+            }}
+            className={`inline-flex h-9 items-center rounded-sm border px-3 text-sm ${
+              comparing
+                ? "border-forest bg-forest/15 text-ink"
+                : "border-line text-ink hover:bg-paper-sunken"
+            }`}
+          >
+            Compare
+          </button>
+        </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <div className="flex overflow-hidden rounded-sm border border-line">
             <button
@@ -372,6 +414,11 @@ export function WeekCalendar() {
                     showWellness={showWellness}
                     onAdd={(date) => setDraft({ date, event: null })}
                     onEdit={(event) => setDraft({ date: event.date, event })}
+                    comparing={comparing}
+                    selected={selected}
+                    onToggleSelect={(id) =>
+                      setSelected((current) => toggleCompareId(current, id))
+                    }
                     draggingId={draggingId}
                     dropKey={dropKey}
                     onDragSession={(id) => {
@@ -400,6 +447,42 @@ export function WeekCalendar() {
           setRefresh((value) => value + 1);
         }}
       />
+      {comparing ? (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-paper/95 px-4 py-3 backdrop-blur-sm">
+          <div className="mx-auto flex max-w-[1360px] flex-wrap items-center gap-3">
+            <p className="text-sm text-ink">
+              {selected.length === 0
+                ? "Select completed sessions on the calendar."
+                : selected.length === 1
+                  ? "1 selected · add at least one more."
+                  : `${selected.length} selected`}
+              {selected.length >= COMPARE_MAX ? " · maximum four." : ""}
+            </p>
+            <div className="ml-auto flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSelected([])}
+                disabled={selected.length === 0}
+                className="inline-flex h-9 items-center rounded-sm px-3 text-sm text-ink-soft hover:bg-paper-sunken hover:text-ink disabled:cursor-default disabled:text-muted"
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                disabled={selected.length < 2}
+                onClick={() => {
+                  router.push(`${pathname}?${COMPARE_PARAM}=${selected.join(",")}`, {
+                    scroll: false,
+                  });
+                }}
+                className="inline-flex h-9 items-center rounded-sm bg-forest px-3 text-sm text-[#04140a] hover:bg-forest-hover disabled:cursor-default disabled:bg-paper-sunken disabled:text-muted"
+              >
+                Compare
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -542,6 +625,9 @@ function MonthDay({
   units,
   recovery,
   showWellness,
+  comparing,
+  selected,
+  onToggleSelect,
   draggingId,
   dropKey,
   onAdd,
@@ -554,6 +640,9 @@ function MonthDay({
   units: Units;
   recovery: RecoveryObservation[];
   showWellness: boolean;
+  comparing: boolean;
+  selected: string[];
+  onToggleSelect: (id: string) => void;
   draggingId: string | null;
   dropKey: string | null;
   onAdd: (date: string) => void;
@@ -561,8 +650,8 @@ function MonthDay({
   onDragSession: (id: string | null) => void;
 }) {
   const isToday = day.key === todayKey;
-  const extra = Math.max(0, day.chips.length - VISIBLE);
-  const visible = day.chips.slice(0, VISIBLE);
+  const extra = comparing ? 0 : Math.max(0, day.chips.length - VISIBLE);
+  const visible = comparing ? day.chips : day.chips.slice(0, VISIBLE);
   const canReceive = Boolean(draggingId) && day.key >= todayKey;
   const isDrop = canReceive && dropKey === day.key;
   const fromHere = draggingId
@@ -584,12 +673,14 @@ function MonthDay({
               : "bg-paper"
       }`}
     >
-      <button
-        type="button"
-        className="absolute inset-0 z-0 cursor-pointer hover:bg-paper-sunken"
-        aria-label={`Add event on ${formatDayTitle(day.key)}`}
-        onClick={() => onAdd(day.key)}
-      />
+      {comparing ? null : (
+        <button
+          type="button"
+          className="absolute inset-0 z-0 cursor-pointer hover:bg-paper-sunken"
+          aria-label={`Add event on ${formatDayTitle(day.key)}`}
+          onClick={() => onAdd(day.key)}
+        />
+      )}
       <div className="relative z-10 flex h-full min-w-0 flex-col p-2 pointer-events-none">
         <div className="flex justify-end">
           <span
@@ -613,6 +704,13 @@ function MonthDay({
                   event={chip.event}
                   timezone={timezone}
                   units={units}
+                  comparing={comparing}
+                  selectedIndex={selected.indexOf(chip.activity.id)}
+                  selectDisabled={
+                    selected.length >= COMPARE_MAX &&
+                    !selected.includes(chip.activity.id)
+                  }
+                  onToggleSelect={() => onToggleSelect(chip.activity.id)}
                 />
               ) : chip.kind === "ghost" ? (
                 <GhostChip
@@ -668,11 +766,19 @@ function DoneChip({
   event,
   timezone,
   units,
+  comparing,
+  selectedIndex,
+  selectDisabled,
+  onToggleSelect,
 }: {
   activity: ActivityRow;
   event: CalendarEvent | null;
   timezone: string;
   units: Units;
+  comparing: boolean;
+  selectedIndex: number;
+  selectDisabled: boolean;
+  onToggleSelect: () => void;
 }) {
   const race = event?.intent === "race";
   const title = event?.title?.trim() || null;
@@ -682,21 +788,46 @@ function DoneChip({
     loadLabel(metricsLoad(activity.activity_metrics)),
   ]);
   const fallback = formatTimeInZone(activity.started_at, timezone);
-  return (
-    <Link
-      href={`?${ACTIVITY_PARAM}=${activity.id}`}
-      scroll={false}
-      className="block min-w-0 max-w-full overflow-hidden rounded-sm border border-line bg-paper px-2 py-1.5 hover:border-ink/25 hover:bg-paper-sunken"
-    >
+  const selected = selectedIndex >= 0;
+  const tone = COMPARE_TONES[selectedIndex] ?? COMPARE_TONES[0];
+  const body = (
+    <>
       <p
         className={`mono text-[9px] font-bold tracking-[0.14em] uppercase ${
-          race ? "text-ember" : sportTone[activity.sport] ?? "text-rest"
+          selected ? tone.text : race ? "text-ember" : sportTone[activity.sport] ?? "text-rest"
         }`}
       >
         {race ? (event?.importance ? `${event.importance} race` : "Race") : activity.sport}
       </p>
       {title ? <p className="truncate text-[12px] text-ink">{title}</p> : null}
       <p className="truncate text-[12px] text-ink">{stats || fallback}</p>
+    </>
+  );
+  if (comparing) {
+    return (
+      <button
+        type="button"
+        aria-pressed={selected}
+        onClick={onToggleSelect}
+        className={`block w-full min-w-0 max-w-full overflow-hidden rounded-sm border px-2 py-1.5 text-left ${
+          selected
+            ? `${tone.ring} bg-paper-sunken`
+            : selectDisabled
+              ? "cursor-default border-line bg-paper opacity-50"
+              : "border-line bg-paper hover:border-ink/25 hover:bg-paper-sunken"
+        }`}
+      >
+        {body}
+      </button>
+    );
+  }
+  return (
+    <Link
+      href={`?${ACTIVITY_PARAM}=${activity.id}`}
+      scroll={false}
+      className="block min-w-0 max-w-full overflow-hidden rounded-sm border border-line bg-paper px-2 py-1.5 hover:border-ink/25 hover:bg-paper-sunken"
+    >
+      {body}
     </Link>
   );
 }

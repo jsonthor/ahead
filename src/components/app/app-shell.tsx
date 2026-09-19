@@ -2,6 +2,7 @@
 
 import { AccountMenu } from "@/components/app/account-menu";
 import { ActivityModal } from "@/components/app/activity-modal";
+import { CompareModal } from "@/components/app/compare-modal";
 import { AskPotential } from "@/components/app/ask-potential";
 import { SyncMenu } from "@/components/app/sync-menu";
 import { getSession, needsOnboarding, type AuthUser } from "@/lib/auth";
@@ -113,6 +114,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {children}
         <Suspense>
           <ActivityModal />
+          <CompareModal />
         </Suspense>
       </div>
     </AppUserContext.Provider>
