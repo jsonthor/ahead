@@ -244,10 +244,10 @@ export function WeekCalendar() {
     <section>
       <div className="grid items-end gap-4 sm:grid-cols-[1fr_auto_1fr]">
         <div>
-          <p className="text-[13px] font-medium tracking-[0.16em] text-muted uppercase">
+          <p className="kicker">
             {month === thisMonth ? "This month" : "Month"}
           </p>
-          <h1 className="mt-2 text-4xl font-medium tracking-[-0.04em] text-ink">
+          <h1 className="title mt-2 text-ink">
             {formatMonthTitle(month)}
           </h1>
         </div>
@@ -302,14 +302,12 @@ export function WeekCalendar() {
             {WEEKDAYS.map((label) => (
               <div
                 key={label}
-                className="px-2 py-2 text-[11px] tracking-wide text-muted uppercase"
+                className="kicker px-2 py-2"
               >
                 {label}
               </div>
             ))}
-            <div className="px-2 py-2 text-[11px] tracking-wide text-muted uppercase">
-              Week
-            </div>
+            <div className="kicker px-2 py-2">Week</div>
           </div>
           <div className="divide-y divide-line">
             {weeks.map((week) => (
@@ -579,7 +577,7 @@ function DoneChip({
       className="block min-w-0 max-w-full overflow-hidden rounded-sm border border-line bg-paper px-2 py-1.5 hover:border-ink/25 hover:bg-paper-sunken"
     >
       <p
-        className={`text-[11px] font-medium tracking-wide uppercase ${
+        className={`mono text-[9px] font-bold tracking-[0.14em] uppercase ${
           race ? "text-ember" : sportTone[activity.sport] ?? "text-rest"
         }`}
       >
@@ -619,7 +617,7 @@ function PlannedChip({
       }`}
     >
       <p
-        className={`text-[11px] font-medium tracking-wide uppercase ${
+        className={`mono text-[9px] font-bold tracking-[0.14em] uppercase ${
           race ? "text-ember" : sportTone[event.sport] ?? "text-rest"
         }`}
       >
@@ -649,7 +647,7 @@ function GhostChip({
   const stats = joinStats([durationLabel(durationMinutes), loadLabel(expectedLoad)]);
   return (
     <div className="block w-full min-w-0 max-w-full overflow-hidden rounded-sm border border-dashed border-forest/70 bg-forest/10 px-2 py-1.5 text-left">
-      <p className="text-[11px] font-medium tracking-wide text-forest uppercase">
+      <p className="mono text-[9px] font-bold tracking-[0.14em] text-forest uppercase">
         Proposed
       </p>
       <p className="truncate text-[12px] text-ink">{title}</p>
@@ -769,9 +767,7 @@ function WeekSummary({
   return (
     <div className="bg-paper px-2 py-2 text-[11px] leading-4 text-ink-soft">
       {weekNo ? (
-        <p className="font-medium tracking-wide text-muted uppercase">
-          Week {weekNo}
-        </p>
+        <p className="kicker">Week {weekNo}</p>
       ) : null}
       <dl className="mt-1.5 grid gap-0.5">
         {durationLabel ? (

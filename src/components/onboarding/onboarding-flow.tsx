@@ -190,13 +190,11 @@ export function OnboardingFlow() {
   if (phase === "connect") {
     return (
       <div>
-        <p className="text-[13px] font-medium tracking-[0.16em] text-muted uppercase">
-          Connect
-        </p>
-        <h1 className="mt-3 text-4xl font-medium tracking-[-0.04em] text-ink">
+        <p className="kicker">Connect</p>
+        <h1 className="title mt-3 text-ink">
           Whose data should Potential learn from?
         </h1>
-        <p className="mt-3 text-[15px] leading-6 text-ink-soft">
+        <p className="lede mt-3">
           COROS and file upload are live. Garmin, Polar, and the rest are
           coming soon.
         </p>
@@ -238,13 +236,11 @@ export function OnboardingFlow() {
 
   return (
     <div>
-      <p className="text-[13px] font-medium tracking-[0.16em] text-muted uppercase">
+      <p className="kicker">
         {current} of {total}
       </p>
-      <h1 className="mt-3 text-4xl font-medium tracking-[-0.04em] text-ink">
-        {question.title}
-      </h1>
-      <p className="mt-3 text-[15px] leading-6 text-ink-soft">{question.help}</p>
+      <h1 className="title mt-3 text-ink">{question.title}</h1>
+      <p className="lede mt-3">{question.help}</p>
 
       <div className="mt-8">
         <QuestionView

@@ -246,13 +246,11 @@ export function DashboardMetrics() {
   return (
     <>
       <section className="mt-10">
-        <p className="text-[13px] font-medium tracking-[0.14em] text-muted uppercase">
-          Today
-        </p>
+        <p className="kicker">Today</p>
         <dl className="mt-3 grid gap-px overflow-hidden border border-line bg-line sm:grid-cols-4">
           {cards.map((card) => (
             <div key={card.id} className="bg-paper-raised px-5 py-5">
-              <dt className="text-[13px] tracking-wide text-muted uppercase">{card.label}</dt>
+              <dt className="kicker">{card.label}</dt>
               <dd className="mt-2">
                 {card.id === "potential" ? (
                   <PotentialWhy
@@ -262,7 +260,7 @@ export function DashboardMetrics() {
                     suppression={displayPotential(current.acute_fatigue)}
                   />
                 ) : (
-                  <span className="font-mono text-3xl tracking-tight text-ink">{card.value}</span>
+                  <span className="metric text-[2rem] text-ink">{card.value}</span>
                 )}
               </dd>
               <p className="mt-3 text-sm text-ink-soft">{card.body}</p>
@@ -342,14 +340,12 @@ function RecoveryTonight({
 
   return (
     <section className="mt-12">
-      <p className="text-[13px] font-medium tracking-[0.14em] text-muted uppercase">
-        {night}
-      </p>
+      <p className="kicker">{night}</p>
       <dl className="mt-3 grid gap-px overflow-hidden border border-line bg-line sm:grid-cols-4">
         {cards.map((card) => (
           <div key={card.id} className="bg-paper-raised px-5 py-5">
-            <dt className="text-[13px] tracking-wide text-muted uppercase">{card.label}</dt>
-            <dd className="mt-2 font-mono text-3xl tracking-tight text-ink">{card.value}</dd>
+            <dt className="kicker">{card.label}</dt>
+            <dd className="metric mt-2 text-[2rem] text-ink">{card.value}</dd>
             {card.range || card.note ? (
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <RangePill
@@ -418,7 +414,7 @@ function PotentialWhy({
       <Dialog.Trigger asChild>
         <button
           type="button"
-          className="font-mono text-3xl tracking-tight text-ink underline decoration-line decoration-2 underline-offset-6 transition-colors hover:decoration-ink"
+          className="metric text-[2rem] text-ink underline decoration-line decoration-2 underline-offset-6 transition-colors hover:decoration-ink"
         >
           {potential}
         </button>
@@ -426,21 +422,21 @@ function PotentialWhy({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70" />
         <Dialog.Content className="fixed top-1/2 left-1/2 z-50 w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 border border-line bg-paper-raised p-6 outline-none">
-          <Dialog.Title className="text-2xl font-medium tracking-tight text-ink">
+          <Dialog.Title className="title text-[2rem] text-ink">
             Why {potential}?
           </Dialog.Title>
           <div className="mt-5 space-y-3 text-sm">
             <p className="flex items-baseline justify-between gap-4">
               <span className="text-ink-soft">Aerobic Reserve</span>
-              <span className="font-mono text-ink">{aerobic}</span>
+              <span className="mono text-ink">{aerobic}</span>
             </p>
             <p className="flex items-baseline justify-between gap-4">
               <span className="text-ink-soft">Specific Capacity</span>
-              <span className="font-mono text-ink">{specific}</span>
+              <span className="mono text-ink">{specific}</span>
             </p>
             <p className="flex items-baseline justify-between gap-4">
               <span className="text-ink-soft">Fatigue Suppression</span>
-              <span className="font-mono text-ink">{suppression}</span>
+              <span className="mono text-ink">{suppression}</span>
             </p>
           </div>
           <Dialog.Description className="mt-5 text-sm leading-6 text-ink-soft">

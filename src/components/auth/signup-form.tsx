@@ -68,10 +68,10 @@ export function SignupForm() {
 
   return (
     <div>
-      <h1 className="text-4xl font-medium tracking-[-0.04em] text-ink">
+      <h1 className="title text-ink">
         Create your account
       </h1>
-      <p className="mt-3 text-[15px] leading-6 text-ink-soft">
+      <p className="lede mt-3">
         Then a few questions Potential cannot learn from your files.
       </p>
 

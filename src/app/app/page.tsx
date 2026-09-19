@@ -20,10 +20,8 @@ export default function AppHomePage() {
 
   return (
     <main className="mx-auto max-w-[1360px] px-4 py-12 sm:px-6 lg:px-8">
-      <p className="text-[13px] font-medium tracking-[0.16em] text-muted uppercase">
-        Dashboard
-      </p>
-      <h1 className="mt-3 text-4xl font-medium tracking-[-0.04em] text-ink">
+      <p className="kicker">Dashboard</p>
+      <h1 className="title mt-3 text-ink">
         {greetingForNow(user.timezone)} {user.displayName}.
       </h1>
       <DashboardMetrics />

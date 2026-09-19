@@ -58,10 +58,10 @@ export function LoginForm() {
 
   return (
     <div>
-      <h1 className="text-4xl font-medium tracking-[-0.04em] text-ink">
+      <h1 className="title text-ink">
         Welcome back
       </h1>
-      <p className="mt-3 text-[15px] leading-6 text-ink-soft">
+      <p className="lede mt-3">
         Log in to your calendar.
       </p>
 

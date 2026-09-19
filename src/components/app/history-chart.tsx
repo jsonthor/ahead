@@ -301,7 +301,7 @@ export function HistoryChart({
       <figure className="rounded-2xl border border-line bg-paper-raised px-5 py-5 sm:px-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-[13px] font-medium tracking-[0.14em] text-muted uppercase">
+            <p className="kicker">
               History
             </p>
             <p className="mt-2 text-sm text-ink-soft">

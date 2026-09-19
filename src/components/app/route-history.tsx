@@ -127,15 +127,15 @@ export function RouteHistory({ activityId, sport }: { activityId: string; sport:
 
   return (
     <section className="mt-6 border border-line bg-paper-sunken px-4 py-4 sm:px-5">
-      <p className="text-[13px] font-medium tracking-[0.16em] text-muted uppercase">
+      <p className="kicker">
         This route
       </p>
-      <h3 className="mt-2 text-lg font-medium tracking-[-0.03em] text-ink">
+      <h3 className="title mt-2 text-[1.65rem] text-ink">
         {timesLine(sport, view.attemptCount)}
       </h3>
       <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
         <div>
-          <p className="text-[12px] tracking-[0.14em] text-muted uppercase">Today</p>
+          <p className="kicker">Today</p>
           <p className="mt-1 text-ink">{formatHms(view.current.timeSeconds) ?? "—"}</p>
           <p className="text-ink-soft">{rateLabel(view.current.speedMps, sport, user.units) ?? "—"}</p>
           <p className="text-ink-soft">
@@ -143,7 +143,7 @@ export function RouteHistory({ activityId, sport }: { activityId: string; sport:
           </p>
         </div>
         <div>
-          <p className="text-[12px] tracking-[0.14em] text-muted uppercase">Typical</p>
+          <p className="kicker">Typical</p>
           <p className="mt-1 text-ink">{formatHms(view.typical.timeSeconds) ?? "—"}</p>
           <p className="text-ink-soft">{rateLabel(view.typical.speedMps, sport, user.units) ?? "—"}</p>
           <p className="text-ink-soft">

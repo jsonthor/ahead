@@ -78,7 +78,7 @@ export function ProfileForm() {
       ) : null}
 
       <section>
-        <h2 className="text-[13px] font-medium tracking-[0.16em] text-muted uppercase">
+        <h2 className="kicker">
           You
         </h2>
         <form className="mt-4 grid gap-4" onSubmit={handleNameSubmit}>
@@ -121,7 +121,7 @@ export function ProfileForm() {
       </section>
 
       <section>
-        <h2 className="text-[13px] font-medium tracking-[0.16em] text-muted uppercase">
+        <h2 className="kicker">
           Display
         </h2>
         <div className="mt-4 grid gap-5">
@@ -159,7 +159,7 @@ export function ProfileForm() {
 
       {onboarding ? (
         <section>
-          <h2 className="text-[13px] font-medium tracking-[0.16em] text-muted uppercase">
+          <h2 className="kicker">
             Training
           </h2>
           <p className="mt-2 text-[13px] leading-5 text-muted">
@@ -211,7 +211,7 @@ export function ProfileForm() {
       ) : null}
 
       <section>
-        <h2 className="text-[13px] font-medium tracking-[0.16em] text-muted uppercase">
+        <h2 className="kicker">
           Connections
         </h2>
         <p className="mt-2 text-[15px] leading-6 text-ink-soft">

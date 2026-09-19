@@ -326,9 +326,7 @@ export function AskPotential() {
             <span className="flex size-8 items-center justify-center rounded-full bg-[var(--home-cta)] text-[#04140a]">
               <ChatBubbleIcon />
             </span>
-            <p className="min-w-0 flex-1 text-[15px] font-medium tracking-tight text-ink">
-              Ask Ahead
-            </p>
+            <p className="kicker min-w-0 flex-1 text-ink">Ask Ahead</p>
             <button
               type="button"
               onClick={() => setOpen(false)}
@@ -480,7 +478,7 @@ function ProposalCard({
   }
   return (
     <div className="mt-3 rounded-sm border border-line bg-paper-raised p-3">
-      <p className="text-[11px] font-medium tracking-[0.14em] text-muted uppercase">
+      <p className="kicker">
         Proposed calendar changes
       </p>
       <ul className="mt-3 grid gap-3">

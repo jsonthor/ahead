@@ -79,7 +79,7 @@ export function UpcomingSessions() {
   return (
     <section className="mt-12">
       <div className="flex items-baseline justify-between gap-4">
-        <p className="text-[13px] font-medium tracking-[0.14em] text-muted uppercase">
+        <p className="kicker">
           Coming up
         </p>
         <Link href="/app/calendar" className="text-[13px] text-ink-soft hover:text-ink">
@@ -122,7 +122,7 @@ export function UpcomingSessions() {
                     </span>
                   </span>
                   {detail ? (
-                    <span className="shrink-0 font-mono text-sm text-ink-soft">
+                    <span className="mono shrink-0 text-sm text-ink-soft">
                       {detail}
                     </span>
                   ) : null}

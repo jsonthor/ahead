@@ -25,10 +25,10 @@ export default async function PermissionPage({
         <Mark />
         <p className="text-sm font-medium text-ink">{brand.name}</p>
       </div>
-      <h1 className="mt-6 text-3xl font-medium tracking-[-0.04em] text-ink">
+      <h1 className="title mt-6 text-ink">
         Allow Potential to read your completed training?
       </h1>
-      <p className="mt-3 text-[15px] leading-6 text-ink-soft">
+      <p className="lede mt-3">
         {brand.name} will share completed workouts with Potential so it can
         build its own activity record. Potential will not send workouts back
         to {brand.name}.

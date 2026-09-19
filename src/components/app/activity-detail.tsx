@@ -179,10 +179,8 @@ function Stat({
   }
   return (
     <div className="rounded-md border border-line bg-paper-raised px-4 py-3">
-      <p className="text-[11px] font-medium tracking-[0.14em] text-muted uppercase">
-        {label}
-      </p>
-      <p className="mt-1 font-serif text-2xl tracking-tight text-ink">{value}</p>
+      <p className="kicker">{label}</p>
+      <p className="metric mt-1 text-[1.65rem] text-ink">{value}</p>
       {hint ? <p className="mt-1 text-[12px] text-muted">{hint}</p> : null}
     </div>
   );
@@ -200,9 +198,7 @@ function MixBar({ mix }: { mix: Mix }) {
   ].filter((part) => part.seconds > 0);
   return (
     <div className="rounded-md border border-line bg-paper-raised p-4">
-      <p className="text-[13px] font-medium tracking-[0.14em] text-muted uppercase">
-        Training mix
-      </p>
+      <p className="kicker">Training mix</p>
       <div className="mt-3 flex h-3 overflow-hidden rounded-sm">
         {parts.map((part) => (
           <div
@@ -238,9 +234,7 @@ function ZoneBar({ zones }: { zones: Zones }) {
   ];
   return (
     <div className="rounded-md border border-line bg-paper-raised p-4">
-      <p className="text-[13px] font-medium tracking-[0.14em] text-muted uppercase">
-        Heart rate zones
-      </p>
+      <p className="kicker">Heart rate zones</p>
       <div className="mt-3 flex h-3 overflow-hidden rounded-sm">
         {parts.map((part) =>
           part.seconds > 0 ? (
@@ -388,7 +382,7 @@ export function ActivityDetail({ id }: { id: string }) {
   if (activity === undefined) {
     return (
       <div>
-        <Dialog.Title className="font-serif text-3xl tracking-tight text-ink">
+        <Dialog.Title className="title text-[2rem] text-ink">
           Session
         </Dialog.Title>
         <Dialog.Description className="mt-2 text-sm text-muted">
@@ -400,7 +394,7 @@ export function ActivityDetail({ id }: { id: string }) {
   if (!activity) {
     return (
       <div>
-        <Dialog.Title className="font-serif text-3xl tracking-tight text-ink">
+        <Dialog.Title className="title text-[2rem] text-ink">
           Session
         </Dialog.Title>
         <Dialog.Description className="mt-3 text-sm text-muted">
@@ -419,7 +413,7 @@ export function ActivityDetail({ id }: { id: string }) {
   return (
     <article>
       <p
-        className={`text-[13px] font-medium tracking-[0.16em] uppercase ${
+        className={`mono text-[10px] font-bold tracking-[0.16em] uppercase ${
           event?.intent === "race" ? "text-ember" : sportTone[activity.sport] ?? "text-rest"
         }`}
       >
@@ -427,7 +421,7 @@ export function ActivityDetail({ id }: { id: string }) {
         {event?.intent === "race" || activity.session_type === "race" ? " · race" : ""}
         {event?.importance ? ` · ${event.importance}` : ""}
       </p>
-      <Dialog.Title className="mt-2 font-serif text-3xl tracking-tight text-ink">
+      <Dialog.Title className="title mt-2 text-[2rem] text-ink">
         {titleFor(activity, event)}
       </Dialog.Title>
       <Dialog.Description className="mt-2 text-[15px] text-ink-soft">
@@ -551,7 +545,7 @@ export function ActivityDetail({ id }: { id: string }) {
 
       {laps.length > 0 ? (
         <section className="mt-10">
-          <h2 className="font-serif text-2xl tracking-tight text-ink">Laps</h2>
+          <h2 className="title text-[1.85rem] text-ink">Laps</h2>
           <div className="mt-4 overflow-x-auto rounded-md border border-line">
             <table className="min-w-full text-left text-[13px]">
               <thead className="bg-paper text-muted">

@@ -218,7 +218,7 @@ export function EventDialog({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70" />
         <Dialog.Content className="fixed top-1/2 left-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto border border-line bg-paper-raised p-6 outline-none">
-          <Dialog.Title className="text-2xl font-medium tracking-tight text-ink">
+          <Dialog.Title className="title text-[2rem] text-ink">
             {event ? "Edit event" : "Add event"}
           </Dialog.Title>
           <Dialog.Description className="mt-2 text-sm text-ink-soft">
@@ -336,9 +336,7 @@ export function EventDialog({
             </div>
             {event?.workout ? (
               <div className="rounded-sm border border-line bg-paper-raised px-3 py-3">
-                <p className="text-[11px] font-medium tracking-[0.14em] text-muted uppercase">
-                  Session
-                </p>
+                <p className="kicker">Session</p>
                 {event.created_by === "potential_ai" ? (
                   <p className="mt-1 text-[12px] text-muted">Added by Potential</p>
                 ) : null}

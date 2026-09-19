@@ -152,9 +152,7 @@ export function BrandConnect({ onLeave, returnTo = "/onboarding" }: Props) {
 
       {optional.length > 0 ? (
         <div className="mt-8">
-          <p className="text-[13px] font-medium tracking-[0.16em] text-muted uppercase">
-            Overlay only
-          </p>
+          <p className="kicker">Overlay only</p>
           <div className="mt-3 grid grid-cols-2 gap-3">
             {optional.map((provider) => (
               <BrandTile

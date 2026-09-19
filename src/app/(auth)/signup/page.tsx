@@ -9,10 +9,10 @@ export const metadata: Metadata = {
 export default function SignupComingSoonPage() {
   return (
     <div>
-      <p className="text-[13px] font-medium tracking-[0.16em] text-muted uppercase">
+      <p className="kicker">
         Invite only
       </p>
-      <h1 className="mt-3 text-4xl font-medium tracking-[-0.04em] text-ink">
+      <h1 className="title mt-3 text-ink">
         Sign up is coming soon
       </h1>
       <p className="mt-4 max-w-xl text-[15px] leading-7 text-ink-soft">

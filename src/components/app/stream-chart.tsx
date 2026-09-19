@@ -80,10 +80,10 @@ export function StreamChart({
   return (
     <figure className="rounded-md border border-line bg-paper-raised p-4">
       <div className="flex items-baseline justify-between gap-3">
-        <figcaption className="text-[13px] font-medium tracking-[0.14em] text-muted uppercase">
+        <figcaption className="kicker">
           {title}
         </figcaption>
-        <p className="font-mono text-[13px] text-ink">
+        <p className="mono text-[13px] text-ink">
           {formatY(shown.y)}
           {unitLabel ? <span className="ml-1 text-muted">{unitLabel}</span> : null}
         </p>

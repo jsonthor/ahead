@@ -91,7 +91,7 @@ export function ThisWeekSummary() {
 
   return (
     <section className="mt-12">
-      <p className="text-[13px] font-medium tracking-[0.14em] text-muted uppercase">
+      <p className="kicker">
         Training This Week
       </p>
       {week.length === 0 ? (
@@ -100,8 +100,8 @@ export function ThisWeekSummary() {
         <dl className="mt-3 grid gap-px overflow-hidden rounded-md border border-line bg-line sm:grid-cols-5">
           {stats.map((stat) => (
             <div key={stat.label} className="bg-paper-raised px-5 py-4">
-              <dt className="text-[12px] tracking-wide text-muted uppercase">{stat.label}</dt>
-              <dd className="mt-2 font-mono text-xl tracking-tight text-ink">{stat.value}</dd>
+              <dt className="kicker">{stat.label}</dt>
+              <dd className="metric mt-2 text-[1.5rem] text-ink">{stat.value}</dd>
             </div>
           ))}
         </dl>

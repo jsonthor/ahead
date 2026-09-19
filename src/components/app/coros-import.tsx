@@ -72,10 +72,10 @@ export function CorosImport() {
 
   return (
     <main className="mx-auto flex min-h-full max-w-lg flex-col justify-center px-4 py-16 sm:px-6">
-      <p className="text-[13px] font-medium tracking-[0.16em] text-muted uppercase">
+      <p className="kicker">
         COROS
       </p>
-      <h1 className="mt-3 text-4xl font-medium tracking-[-0.04em] text-ink">
+      <h1 className="title mt-3 text-ink">
         Importing your training
       </h1>
       <p className="mt-4 text-[15px] leading-7 text-ink-soft">{progress.message}</p>
