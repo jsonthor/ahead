@@ -101,7 +101,7 @@ export const CHAT_TOOLS = [
   {
     name: "propose_calendar_changes",
     description:
-      "Propose calendar writes. Never claim they are saved. The athlete must Apply in the UI. Use for recommended sessions, races, moves, and deletes.",
+      "Draft the diary change in this turn whenever you recommend sessions or a week's shape. Never claim they are saved. The athlete must Apply. Do not wait to be asked to add it. Do not create rest-day events.",
     input_schema: {
       type: "object",
       additionalProperties: false,

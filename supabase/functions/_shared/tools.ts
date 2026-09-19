@@ -209,7 +209,7 @@ const TOOLS = [
     type: "function",
     name: "propose_calendar_changes",
     description:
-      "Draft a mechanical calendar diff. Does not write the calendar. Athlete must Apply. Put the why in your chat message, not in rationale. For each create_session include title, sport, durationMinutes, expectedLoad, purpose, intensity, and structure (named blocks: Warm-up / Main / Finish / Cool-down with the prescribed work). Do not invent UUIDs — use session ids returned by calendar tools when moving or editing.",
+      "Draft the diary change in this turn whenever you recommend sessions or a week's shape. Does not write the calendar — the athlete must Apply. Do not wait to be asked to add it. Put the why in your chat message, not in rationale. For each create_session include title, sport, durationMinutes, expectedLoad, purpose, intensity, and structure (named blocks: Warm-up / Main / Finish / Cool-down with the prescribed work). Do not invent UUIDs — use session ids from calendar tools when moving or editing. Do not create rest-day events.",
     parameters: {
       type: "object",
       additionalProperties: false,
