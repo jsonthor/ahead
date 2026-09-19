@@ -1,3 +1,4 @@
+import { athleteAge } from "@/lib/athlete-age";
 import { addDaysToKey, dateKeyInZone } from "@/lib/calendar";
 import { CALENDAR_EVENT_COLUMNS, parseCalendarEvent } from "@/lib/calendar-event";
 import { summarize, type OnboardingAnswers } from "@/lib/onboarding";
@@ -33,7 +34,7 @@ export async function buildContextPacket(
   const [profileRes, loadsRes, eventsRes, activitiesRes, memoriesRes] = await Promise.all([
     client
       .from("profiles")
-      .select("display_name, timezone, units, onboarding")
+      .select("display_name, timezone, units, date_of_birth, onboarding")
       .eq("id", athleteId)
       .maybeSingle(),
     client
@@ -119,6 +120,7 @@ export async function buildContextPacket(
     athlete: {
       name: profile?.display_name ?? "Athlete",
       units: profile?.units ?? "metric",
+      ...(athleteAge(profile?.date_of_birth, new Date(), timeZone) ?? {}),
       onboarding: onboarding ? summarize(onboarding) : null,
       memory: (memoriesRes.data ?? []).map((row) => `${row.type}: ${row.content}`),
     },

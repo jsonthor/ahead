@@ -1,3 +1,4 @@
+import { athleteAge } from "../_shared/age.ts";
 import { corsHeaders, jsonResponse, optionsResponse } from "../_shared/cors.ts";
 import { openaiKey, requireUser, userClient } from "../_shared/client.ts";
 import {
@@ -84,7 +85,7 @@ Deno.serve(async (req) => {
 
   const { data: profile } = await client
     .from("profiles")
-    .select("display_name, timezone, units, onboarding")
+    .select("display_name, timezone, units, date_of_birth")
     .eq("id", user.id)
     .maybeSingle();
   const timeZone = profile?.timezone || "Europe/London";
@@ -144,6 +145,7 @@ Deno.serve(async (req) => {
     athlete: {
       name: profile?.display_name ?? "Athlete",
       units: profile?.units ?? "metric",
+      ...(athleteAge(profile?.date_of_birth, new Date(), timeZone) ?? {}),
     },
     uiContext: body?.uiContext ?? null,
     relevantMemories: slimMemories(memories),

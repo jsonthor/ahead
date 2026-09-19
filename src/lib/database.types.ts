@@ -11,6 +11,7 @@ type ProfileRow = {
   display_name: string;
   timezone: string;
   units: "metric" | "imperial";
+  date_of_birth: string | null;
   onboarding: Json | null;
   potential_calibration: Json | null;
   assistant_memory: Json | null;
@@ -265,6 +266,7 @@ export type Database = {
           display_name: string;
           timezone?: string;
           units?: "metric" | "imperial";
+          date_of_birth?: string | null;
           onboarding?: Json | null;
           potential_calibration?: Json | null;
           assistant_memory?: Json | null;

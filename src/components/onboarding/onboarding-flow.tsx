@@ -165,6 +165,12 @@ export function OnboardingFlow() {
       return;
     }
     if (safeIndex >= steps.length - 1) {
+      const blocked = firstInvalidQuestion(answers);
+      if (blocked) {
+        setIndex(visibleQuestions(answers).findIndex((step) => step.id === blocked.id));
+        setError(validateQuestion(blocked, answers.values[blocked.id]));
+        return;
+      }
       setPhase("connect");
       persist({ phase: "connect", answers, index: safeIndex });
       return;
@@ -173,6 +179,13 @@ export function OnboardingFlow() {
   }
 
   async function finish() {
+    const blocked = firstInvalidQuestion(answers);
+    if (blocked) {
+      setPhase("questions");
+      setIndex(visibleQuestions(answers).findIndex((step) => step.id === blocked.id));
+      setError(validateQuestion(blocked, answers.values[blocked.id]));
+      return;
+    }
     const result = await saveOnboarding(answers);
     if (!result.ok) {
       setError(result.error.message);
@@ -279,6 +292,12 @@ export function OnboardingFlow() {
         <p className="mt-3 text-[13px] text-muted">Optional — continue with none.</p>
       ) : null}
     </div>
+  );
+}
+
+function firstInvalidQuestion(answers: OnboardingAnswers) {
+  return visibleQuestions(answers).find((question) =>
+    Boolean(validateQuestion(question, answers.values[question.id])),
   );
 }
 

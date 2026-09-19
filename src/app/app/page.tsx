@@ -1,6 +1,7 @@
 "use client";
 
 import { DashboardMetrics } from "@/components/app/dashboard-metrics";
+import { ProfileCompletion } from "@/components/app/profile-completion";
 import { useAppUser } from "@/components/app/app-shell";
 import { hourInZone } from "@/lib/calendar";
 
@@ -24,6 +25,7 @@ export default function AppHomePage() {
       <h1 className="title mt-3 text-ink">
         {greetingForNow(user.timezone)} {user.displayName}.
       </h1>
+      <ProfileCompletion />
       <DashboardMetrics />
     </main>
   );

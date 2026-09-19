@@ -13,8 +13,8 @@ export default function ProfilePage() {
         How Ahead should know you
       </h1>
       <p className="lede mt-3 max-w-xl">
-        Name, units, and timezone. Training answers stay here too — they are
-        not something a file can tell us.
+        Name, date of birth, units, and timezone. Training answers stay here
+        too — they are not something a file can tell us.
       </p>
       <div className="mt-10">
         <ProfileForm />

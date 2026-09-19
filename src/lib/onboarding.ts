@@ -9,11 +9,12 @@
  * will store on the athlete profile in Supabase.
  */
 
+import { parseDateOfBirth, validateDateOfBirth } from "@/lib/athlete-age";
 import type { Database } from "@/lib/database.types";
 import type { WorkoutSport } from "@/lib/workout";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export const ONBOARDING_VERSION = 2;
+export const ONBOARDING_VERSION = 3;
 
 export const CASUAL_DISCIPLINE = "casual";
 const CASUAL_OPTION: Option = { id: CASUAL_DISCIPLINE, label: "Just for fun" };
@@ -82,7 +83,8 @@ export type AnswerValue =
   | { type: "sport_discipline"; picks: SportPick[] }
   | { type: "availability"; days: Record<DayId, number | null> }
   | { type: "fixed_sessions"; sessions: FixedSession[] }
-  | { type: "event_list"; events: PriorityRace[] };
+  | { type: "event_list"; events: PriorityRace[] }
+  | { type: "date"; value: string };
 
 export type OnboardingAnswers = {
   version: number;
@@ -118,6 +120,9 @@ export type Question =
     })
   | (BaseQuestion & {
       type: "event_list";
+    })
+  | (BaseQuestion & {
+      type: "date";
     });
 
 export const SPORTS: SportOption[] = [
@@ -177,10 +182,17 @@ function seasonId(answers: OnboardingAnswers): string | undefined {
 
 /**
  * The live questionnaire. Edit this list to change onboarding.
- * Keep it to 4–6 questions. Prefer hiding a step with `showIf`
+ * Keep it short. Prefer hiding a step with `showIf`
  * over adding another screen.
  */
 export const QUESTIONS: Question[] = [
+  {
+    id: "date_of_birth",
+    type: "date",
+    title: "When were you born?",
+    help: "We use age where it matters to interpreting training and recovery.",
+    required: true,
+  },
   {
     id: "train_for",
     type: "sport_discipline",
@@ -291,6 +303,8 @@ export function defaultValue(question: Question): AnswerValue {
       return { type: "fixed_sessions", sessions: [] };
     case "event_list":
       return { type: "event_list", events: [] };
+    case "date":
+      return { type: "date", value: "" };
   }
 }
 
@@ -331,7 +345,25 @@ export function validateQuestion(
     case "fixed_sessions":
     case "event_list":
       return null;
+    case "date":
+      if (value.type !== "date") {
+        return "Enter your date of birth.";
+      }
+      return validateDateOfBirth(value.value);
   }
+}
+
+export function takeDateOfBirth(answers: OnboardingAnswers): {
+  dateOfBirth: string | null;
+  answers: OnboardingAnswers;
+} {
+  const raw = answers.values.date_of_birth;
+  const value = raw?.type === "date" ? raw.value : "";
+  const { date_of_birth: _removed, ...values } = answers.values;
+  return {
+    dateOfBirth: parseDateOfBirth(value),
+    answers: { ...answers, values },
+  };
 }
 
 export function labelForChoice(question: Question, id: string): string {

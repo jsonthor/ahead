@@ -3,10 +3,10 @@
 import { Field, inputClassName } from "@/components/auth/field";
 import { UnitsChoice } from "@/components/app/units-choice";
 import { useAppSession } from "@/components/app/app-shell";
+import { athleteAge, validateDateOfBirth } from "@/lib/athlete-age";
 import { saveProfile, validateDisplayName } from "@/lib/auth";
 import { summarize } from "@/lib/onboarding";
 import type { Units } from "@/lib/units";
-import Link from "next/link";
 import { useMemo, useState, type FormEvent } from "react";
 
 function timeZones() {
@@ -25,10 +25,14 @@ export function ProfileForm() {
   const [displayName, setDisplayName] = useState(user.displayName);
   const [units, setUnits] = useState<Units>(user.units);
   const [timezone, setTimezone] = useState(user.timezone);
+  const [dateOfBirth, setDateOfBirth] = useState(user.dateOfBirth ?? "");
   const [nameError, setNameError] = useState<string | null>(null);
+  const [dobError, setDobError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [savingName, setSavingName] = useState(false);
+  const [savingDob, setSavingDob] = useState(false);
   const [nameSaved, setNameSaved] = useState(false);
+  const [dobSaved, setDobSaved] = useState(false);
   const zones = useMemo(() => {
     const list = timeZones();
     if (timezone && !list.includes(timezone)) {
@@ -65,6 +69,24 @@ export function ProfileForm() {
       setNameSaved(true);
     }
   }
+
+  async function handleDobSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const error = validateDateOfBirth(dateOfBirth, new Date(), timezone);
+    if (error) {
+      setDobError(error);
+      return;
+    }
+    setDobError(null);
+    setSavingDob(true);
+    const ok = await persist({ dateOfBirth });
+    setSavingDob(false);
+    if (ok) {
+      setDobSaved(true);
+    }
+  }
+
+  const age = athleteAge(dateOfBirth || user.dateOfBirth, new Date(), timezone);
 
   return (
     <div className="grid gap-12">
@@ -116,6 +138,49 @@ export function ProfileForm() {
               {savingName ? "Saving…" : "Save name"}
             </button>
             {nameSaved ? <p className="text-[13px] text-muted">Saved.</p> : null}
+          </div>
+        </form>
+      </section>
+
+      <section>
+        <h2 className="kicker">
+          Athlete details
+        </h2>
+        <form className="mt-4 grid gap-4" onSubmit={handleDobSubmit}>
+          <Field
+            label="Date of birth"
+            htmlFor="dateOfBirth"
+            error={dobError ?? undefined}
+            hint="We use age where it matters to interpreting training and recovery. Age is derived from this date."
+          >
+            <input
+              id="dateOfBirth"
+              name="dateOfBirth"
+              type="date"
+              autoComplete="bday"
+              value={dateOfBirth}
+              max={new Date().toISOString().slice(0, 10)}
+              min="1900-01-01"
+              aria-invalid={Boolean(dobError)}
+              onChange={(event) => {
+                setDateOfBirth(event.target.value);
+                setDobSaved(false);
+              }}
+              className={inputClassName}
+            />
+          </Field>
+          {age ? (
+            <p className="text-[13px] text-muted">{age.age_years} years old</p>
+          ) : null}
+          <div className="flex items-center gap-3">
+            <button
+              type="submit"
+              disabled={savingDob || dateOfBirth === (user.dateOfBirth ?? "")}
+              className="home-cta px-4 disabled:opacity-50"
+            >
+              {savingDob ? "Saving…" : "Save date of birth"}
+            </button>
+            {dobSaved ? <p className="text-[13px] text-muted">Saved.</p> : null}
           </div>
         </form>
       </section>
@@ -209,22 +274,6 @@ export function ProfileForm() {
           </dl>
         </section>
       ) : null}
-
-      <section>
-        <h2 className="kicker">
-          Connections
-        </h2>
-        <p className="mt-2 text-[15px] leading-6 text-ink-soft">
-          COROS and file upload are live on Connect. Garmin and Polar are
-          coming soon. Strava stays overlay-only when it arrives.
-        </p>
-        <Link
-          href="/app/connect"
-          className="mt-4 inline-flex h-10 items-center text-sm text-ink underline-offset-2 hover:underline"
-        >
-          Manage connections
-        </Link>
-      </section>
     </div>
   );
 }

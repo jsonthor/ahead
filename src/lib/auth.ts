@@ -5,10 +5,12 @@
  * Supabase Auth; cookie session via `@supabase/ssr`.
  */
 
+import { parseDateOfBirth, validateDateOfBirth } from "@/lib/athlete-age";
 import { createClient } from "@/lib/supabase/client";
 import {
   emptyAnswers,
   seedPriorityRaces,
+  takeDateOfBirth,
   type OnboardingAnswers,
 } from "@/lib/onboarding";
 import { parseUnits, type Units } from "@/lib/units";
@@ -28,6 +30,7 @@ export type AuthUser = {
   displayName: string;
   timezone: string;
   units: Units;
+  dateOfBirth: string | null;
   emailConfirmed: boolean;
   onboarding: OnboardingAnswers | null;
 };
@@ -124,7 +127,7 @@ async function loadUser(user: User): Promise<AuthUser> {
 
   let { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, timezone, units, onboarding")
+    .select("display_name, timezone, units, date_of_birth, onboarding")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -137,7 +140,7 @@ async function loadUser(user: User): Promise<AuthUser> {
     });
     const retry = await supabase
       .from("profiles")
-      .select("display_name, timezone, units, onboarding")
+      .select("display_name, timezone, units, date_of_birth, onboarding")
       .eq("id", user.id)
       .maybeSingle();
     profile = retry.data;
@@ -149,6 +152,7 @@ async function loadUser(user: User): Promise<AuthUser> {
     displayName: profile?.display_name || fallbackName,
     timezone: profile?.timezone || fallbackTimezone,
     units: parseUnits(profile?.units ?? fallbackUnits),
+    dateOfBirth: profile?.date_of_birth ?? null,
     emailConfirmed: Boolean(user.email_confirmed_at),
     onboarding: asOnboarding(profile?.onboarding ?? null),
   };
@@ -250,6 +254,7 @@ export type ProfilePatch = {
   displayName?: string;
   timezone?: string;
   units?: Units;
+  dateOfBirth?: string | null;
 };
 
 function isTimezone(value: string) {
@@ -274,6 +279,22 @@ export async function saveProfile(
   const displayName = patch.displayName ?? current.displayName;
   const nextTimezone = patch.timezone ?? current.timezone;
   const units = patch.units ?? current.units;
+  let dateOfBirth = current.dateOfBirth;
+  if (patch.dateOfBirth !== undefined) {
+    if (patch.dateOfBirth === null || patch.dateOfBirth.trim() === "") {
+      dateOfBirth = null;
+    } else {
+      const dobError = validateDateOfBirth(
+        patch.dateOfBirth,
+        new Date(),
+        nextTimezone,
+      );
+      if (dobError) {
+        return { ok: false, error: { message: dobError } };
+      }
+      dateOfBirth = parseDateOfBirth(patch.dateOfBirth);
+    }
+  }
 
   if (patch.displayName !== undefined) {
     const nameError = validateDisplayName(displayName);
@@ -291,6 +312,7 @@ export async function saveProfile(
       display_name: displayName.trim(),
       timezone: nextTimezone,
       units,
+      date_of_birth: dateOfBirth,
     })
     .eq("id", authData.user.id);
 
@@ -320,12 +342,25 @@ export async function saveOnboarding(
 
   const current = await loadUser(authData.user);
   const payload = answers.version ? answers : { ...emptyAnswers(), ...answers };
+  const { dateOfBirth, answers: stored } = takeDateOfBirth(payload);
+  if (!dateOfBirth) {
+    return { ok: false, error: { message: "Enter your date of birth." } };
+  }
+  const dobError = validateDateOfBirth(
+    dateOfBirth,
+    new Date(),
+    current.timezone,
+  );
+  if (dobError) {
+    return { ok: false, error: { message: dobError } };
+  }
   const { error } = await supabase.from("profiles").upsert({
     id: authData.user.id,
     display_name: current.displayName,
     timezone: current.timezone,
     units: current.units,
-    onboarding: payload as unknown as Json,
+    date_of_birth: dateOfBirth,
+    onboarding: stored as unknown as Json,
   });
 
   if (error) {

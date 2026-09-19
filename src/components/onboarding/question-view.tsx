@@ -211,6 +211,25 @@ export function QuestionView({ question, value, onChange }: Props) {
           onChange={(events) => onChange({ type: "event_list", events })}
         />
       );
+
+    case "date":
+      if (current.type !== "date") {
+        return null;
+      }
+      return (
+        <input
+          type="date"
+          name={question.id}
+          autoComplete="bday"
+          value={current.value}
+          max={new Date().toISOString().slice(0, 10)}
+          min="1900-01-01"
+          onChange={(event) =>
+            onChange({ type: "date", value: event.target.value })
+          }
+          className={inputClassName}
+        />
+      );
   }
 }
 
