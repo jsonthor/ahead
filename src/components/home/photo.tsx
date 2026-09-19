@@ -5,11 +5,13 @@ export function HomePhoto({
   alt,
   preload,
   objectPosition = "center",
+  className,
 }: {
   src: string;
   alt: string;
   preload?: boolean;
   objectPosition?: string;
+  className?: string;
 }) {
   return (
     <Image
@@ -18,7 +20,7 @@ export function HomePhoto({
       fill
       preload={preload}
       sizes="100vw"
-      className="object-cover"
+      className={className ? `object-cover ${className}` : "object-cover"}
       style={{ objectPosition }}
     />
   );

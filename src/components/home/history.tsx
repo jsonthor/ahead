@@ -74,7 +74,7 @@ export function HomeHistory() {
           </h2>
 
           <p className="mt-16 border-y border-black/15 py-6 text-[clamp(1.4rem,2.3vw,2.5rem)] tracking-[-0.04em]">
-            Compare the four weeks before Assen with the four weeks after.
+            Compare the four weeks before this race with the four weeks after.
           </p>
 
           <div className="relative mt-10 h-[22rem] sm:h-[27.5rem]">

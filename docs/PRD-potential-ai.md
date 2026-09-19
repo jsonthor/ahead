@@ -163,7 +163,7 @@ The architecture already queries activities, aggregates periods, reads calculate
 | --- | --- |
 | Understand current state | “Why has my Potential dropped?” |
 | Understand history | “What changed in my training in July?” |
-| Compare periods | “Compare the four weeks before Assen with the four weeks after.” |
+| Compare periods | “Compare the four weeks before this race with the four weeks after.” |
 | Assess progression | “Am I actually getting fitter?” |
 | Find patterns | “What was I doing when I was racing best?” |
 | Analyse an activity | “What do you think of yesterday’s ride?” |
@@ -901,7 +901,7 @@ Ship with a golden set against fixture athletes (extend the parent PRD set):
 
 - “Why has my Potential dropped?”
 - “What should I do tomorrow?”
-- “Compare the four weeks before Assen with the four weeks after.”
+- “Compare the four weeks before this race with the four weeks after.”
 - “Give me something for tomorrow.” / “Put that Wednesday.”
 - “I’m exhausted. Change the rest of the week.”
 - “Should we put the Wednesday intervals back?” (after a prior decision to remove them)

@@ -34,35 +34,33 @@ export function HomeHero({ signedIn = false }: { signedIn?: boolean }) {
       </div>
 
       <div className="flex min-h-0 flex-col">
-        <div className="relative min-h-[20rem] overflow-hidden lg:min-h-0 lg:flex-1">
+        <div className="relative aspect-[16/10] overflow-hidden">
           <HomePhoto
-            src="/home/session.jpg"
+            src="/home/session-hero.jpg"
             alt="A runner checking her watch mid-session in the rain"
             preload
-            objectPosition="72% 28%"
+            objectPosition="center top"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/25 to-black/10" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20" />
+          <div className="absolute inset-0 bg-gradient-to-l from-black/50 via-black/15 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/10" />
 
-          <div className="relative z-10 p-5 sm:p-7 lg:p-8">
+          <div className="relative z-10 flex h-full flex-col items-end p-5 text-right sm:p-7 lg:p-8">
             <p className="home-mono text-[10px] tracking-[0.16em] text-white/70 uppercase">
               Readiness
             </p>
-            <div className="mt-1 flex items-end gap-4">
-              <p className="home-mono text-[clamp(3.6rem,6vw,5.4rem)] leading-none tracking-[-0.08em] text-white [text-shadow:0_1px_18px_rgba(0,0,0,0.45)]">
-                49
+            <p className="home-mono mt-1 text-[clamp(3.6rem,6vw,5.4rem)] leading-none tracking-[-0.08em] text-white [text-shadow:0_1px_18px_rgba(0,0,0,0.45)]">
+              49
+            </p>
+            <div className="mt-2 flex items-center justify-end gap-3">
+              <p className="home-mono text-[14px] text-[var(--home-cta)]">
+                ↓ 8
               </p>
-              <div className="mb-1.5">
-                <p className="home-mono text-[14px] text-[var(--home-cta)]">
-                  ↓ 8
-                </p>
-                <ReadinessSpark />
-              </div>
+              <ReadinessSpark />
             </div>
             <p className="home-mono mt-3 text-[10px] tracking-[0.12em] text-white/70 uppercase">
               since Monday
             </p>
-            <p className="mt-3 max-w-[20rem] text-[13px] leading-5 text-white/80 [text-shadow:0_1px_10px_rgba(0,0,0,0.55)]">
+            <p className="mt-3 max-w-[18rem] text-[13px] leading-5 text-white/80 [text-shadow:0_1px_10px_rgba(0,0,0,0.55)]">
               Recent load is suppressing more of your capacity.
             </p>
           </div>
