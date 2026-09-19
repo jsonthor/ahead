@@ -62,7 +62,7 @@ export function LoginForm() {
         Welcome back
       </h1>
       <p className="lede mt-3">
-        Log in to your calendar.
+        See what your training did.
       </p>
 
       {formError ? (

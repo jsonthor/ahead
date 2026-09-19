@@ -29,4 +29,4 @@ export function Field({ label, htmlFor, error, hint, children }: Props) {
 }
 
 export const inputClassName =
-  "h-11 w-full border border-line bg-paper-raised px-3 text-[15px] text-ink placeholder:text-muted aria-[invalid=true]:border-danger";
+  "auth-field h-11 w-full rounded-sm border px-3 text-[15px] aria-[invalid=true]:border-danger";

@@ -25,7 +25,7 @@ export function UnitsChoice({ value, onChange }: Props) {
             className={`rounded-sm border px-3 py-2 text-left ${
               selected
                 ? "border-ink bg-ink text-paper"
-                : "border-line bg-paper hover:bg-paper-sunken"
+                : "border-white/25 bg-[#1c1c1c] hover:bg-[#242424]"
             }`}
           >
             <span className="block text-sm font-medium">{option.label}</span>
