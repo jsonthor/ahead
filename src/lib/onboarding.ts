@@ -185,7 +185,7 @@ export const QUESTIONS: Question[] = [
     id: "train_for",
     type: "sport_discipline",
     title: "What do you train for?",
-    help: "Pick every sport that belongs in the week — including the ones that are just for fun. Potential will learn the rest from your files.",
+    help: "Pick every sport that belongs in the week — including the ones that are just for fun. Ahead will learn the rest from your files.",
     required: true,
     sports: SPORTS,
   },
@@ -259,7 +259,7 @@ export const QUESTIONS: Question[] = [
       { id: "climbing", label: "Climbing" },
       { id: "return", label: "Return to fitness" },
       { id: "maintain", label: "Maintain fitness" },
-      { id: "from_data", label: "Let Potential decide from my data" },
+      { id: "from_data", label: "Let Ahead decide from my data" },
     ],
   },
 ];
@@ -302,7 +302,7 @@ export function validateQuestion(
     return null;
   }
   if (!value) {
-    return "This one matters — Potential cannot infer it.";
+    return "This one matters — Ahead cannot infer it.";
   }
   switch (question.type) {
     case "choice":

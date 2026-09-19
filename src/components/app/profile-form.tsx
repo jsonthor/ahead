@@ -163,7 +163,7 @@ export function ProfileForm() {
             Training
           </h2>
           <p className="mt-2 text-[13px] leading-5 text-muted">
-            From the questions Potential cannot learn from files.
+            From the questions Ahead cannot learn from files.
           </p>
           <dl className="mt-4 grid gap-px overflow-hidden rounded-md border border-line bg-line sm:grid-cols-2">
             <div className="bg-paper-raised px-4 py-4">

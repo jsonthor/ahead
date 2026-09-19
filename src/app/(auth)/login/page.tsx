@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
-  title: "Log in — Potential",
+  title: "Log in — Ahead",
 };
 
 export default function LoginPage() {

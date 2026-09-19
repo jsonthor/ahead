@@ -2,7 +2,7 @@ import { WeekCalendar } from "@/components/app/week-calendar";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Calendar — Potential",
+  title: "Calendar — Ahead",
 };
 
 export default function CalendarPage() {

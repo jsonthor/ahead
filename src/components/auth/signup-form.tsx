@@ -72,7 +72,7 @@ export function SignupForm() {
         Create your account
       </h1>
       <p className="lede mt-3">
-        Then a few questions Potential cannot learn from your files.
+        Then a few questions Ahead cannot learn from your files.
       </p>
 
       {formError ? (

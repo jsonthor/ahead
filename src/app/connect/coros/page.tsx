@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
-  title: "Importing COROS — Potential",
+  title: "Importing COROS — Ahead",
 };
 
 export default function CorosImportPage() {

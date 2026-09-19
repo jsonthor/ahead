@@ -300,7 +300,7 @@ function BrandTile({
             className="inline-flex h-8 items-center justify-center rounded-sm border border-line px-3 text-[12px] font-medium text-ink hover:bg-paper-sunken"
             onClick={() => {
               const confirmed = window.confirm(
-                `Disconnect ${provider.name}? Imported activities and recovery stay in Potential. You can reconnect later.`,
+                `Disconnect ${provider.name}? Imported activities and recovery stay in Ahead. You can reconnect later.`,
               );
               if (!confirmed) {
                 return;

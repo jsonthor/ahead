@@ -192,7 +192,7 @@ export function OnboardingFlow() {
       <div>
         <p className="kicker">Connect</p>
         <h1 className="title mt-3 text-ink">
-          Whose data should Potential learn from?
+          Whose data should Ahead learn from?
         </h1>
         <p className="lede mt-3">
           COROS and file upload are live. Garmin, Polar, and the rest are

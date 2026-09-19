@@ -26,11 +26,11 @@ export default async function PermissionPage({
         <p className="text-sm font-medium text-ink">{brand.name}</p>
       </div>
       <h1 className="title mt-6 text-ink">
-        Allow Potential to read your completed training?
+        Allow Ahead to read your completed training?
       </h1>
       <p className="lede mt-3">
-        {brand.name} will share completed workouts with Potential so it can
-        build its own activity record. Potential will not send workouts back
+        {brand.name} will share completed workouts with Ahead so it can
+        build its own activity record. Ahead will not send workouts back
         to {brand.name}.
       </p>
       <div className="mt-8 grid gap-2">

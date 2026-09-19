@@ -110,7 +110,7 @@ export class CorosOAuthProvider implements OAuthClientProvider {
 
   get clientMetadata() {
     return {
-      client_name: "Potential",
+      client_name: "Ahead",
       redirect_uris: [this.redirectUrl],
       grant_types: ["authorization_code", "refresh_token"],
       response_types: ["code"],

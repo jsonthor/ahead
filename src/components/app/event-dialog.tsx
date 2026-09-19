@@ -338,7 +338,7 @@ export function EventDialog({
               <div className="rounded-sm border border-line bg-paper-raised px-3 py-3">
                 <p className="kicker">Session</p>
                 {event.created_by === "potential_ai" ? (
-                  <p className="mt-1 text-[12px] text-muted">Added by Potential</p>
+                  <p className="mt-1 text-[12px] text-muted">Added by Ahead</p>
                 ) : null}
                 {event.planned_load != null ? (
                   <p className="mt-1 text-sm text-ink">Expected load {Math.round(event.planned_load)}</p>

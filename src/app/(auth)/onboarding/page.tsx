@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
-  title: "Onboarding — Potential",
+  title: "Onboarding — Ahead",
 };
 
 export default function OnboardingPage() {

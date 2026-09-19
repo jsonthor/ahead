@@ -119,7 +119,7 @@ export const THRESHOLD_5X5: PotentialWorkout = {
   version: WORKOUT_VERSION,
   title: "Threshold 5×5",
   sport: "run",
-  description: "Classic threshold repeats on Potential’s calendar.",
+  description: "Classic threshold repeats on Ahead’s calendar.",
   steps: [
     {
       type: "step",
