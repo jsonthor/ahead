@@ -26,6 +26,32 @@ type SyncState = {
   message: string;
 };
 
+function SyncSpinner() {
+  return (
+    <svg
+      className="size-4 shrink-0 motion-safe:animate-spin"
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden
+    >
+      <circle
+        cx="8"
+        cy="8"
+        r="6"
+        stroke="currentColor"
+        strokeOpacity="0.22"
+        strokeWidth="2"
+      />
+      <path
+        d="M14 8a6 6 0 0 0-6-6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 function headerStatus(sync: SyncState) {
   if (sync.status === "error") {
     return sync.message;
@@ -171,9 +197,9 @@ export function SyncMenu() {
 
   return (
     <div className="flex items-center gap-2">
-      {sync ? (
+      {sync && sync.status !== "running" ? (
         <p
-          className={`hidden whitespace-nowrap text-sm sm:block ${
+          className={`hidden whitespace-nowrap text-[0.9375rem] font-medium sm:block ${
             sync.status === "error" ? "text-danger" : "text-ink"
           }`}
           role="status"
@@ -185,10 +211,18 @@ export function SyncMenu() {
         <DropdownMenu.Trigger asChild>
           <button
             type="button"
-            className="inline-flex h-[2.75rem] items-center border border-line px-[1.15rem] text-[0.9375rem] font-medium text-ink hover:bg-paper-sunken"
+            className="inline-flex h-[2.75rem] items-center gap-2 border border-line px-[1.15rem] text-[0.9375rem] font-medium text-ink hover:bg-paper-sunken"
             aria-label="Sync connected training"
+            aria-busy={sync?.status === "running"}
           >
-            {sync?.status === "running" ? "Syncing" : "Sync"}
+            {sync?.status === "running" ? (
+              <>
+                <SyncSpinner />
+                {headerStatus(sync)}
+              </>
+            ) : (
+              "Sync"
+            )}
           </button>
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
@@ -204,9 +238,14 @@ export function SyncMenu() {
                 disabled={sync?.status === "running"}
                 onSelect={() => void syncProvider(provider)}
               >
-                {sync?.status === "running" && sync.provider === provider.id
-                  ? `Syncing ${provider.name}…`
-                  : provider.name}
+                {sync?.status === "running" && sync.provider === provider.id ? (
+                  <span className="flex items-center gap-2">
+                    <SyncSpinner />
+                    {headerStatus(sync)}
+                  </span>
+                ) : (
+                  provider.name
+                )}
               </DropdownMenu.Item>
             ))}
           </DropdownMenu.Content>
