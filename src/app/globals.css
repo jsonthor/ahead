@@ -157,9 +157,9 @@ body {
   --home-text: #f5f5f3;
   --home-text-2: rgba(245, 245, 243, 0.72);
   --home-text-3: rgba(245, 245, 243, 0.44);
-  --home-accent: #8fbfa3;
-  --home-accent-dim: rgba(143, 191, 163, 0.16);
-  --home-accent-line: rgba(143, 191, 163, 0.55);
+  --home-accent: #00e05a;
+  --home-accent-dim: rgba(0, 224, 90, 0.16);
+  --home-accent-line: rgba(0, 224, 90, 0.5);
   --home-cta: #00e05a;
   --home-cta-hover: #2aff74;
   --home-run: #8fbfa3;
@@ -179,8 +179,12 @@ body {
 }
 
 .home :focus-visible {
-  outline: 2px solid var(--home-cta);
+  outline: 1px solid #f5f5f3;
   outline-offset: 3px;
+}
+
+.home section[id] {
+  scroll-margin-top: 5.75rem;
 }
 
 .home-cta {
@@ -196,6 +200,79 @@ body {
   letter-spacing: -0.02em;
   color: #04140a;
   transition: background 0.15s ease;
+}
+
+.home-product {
+  position: relative;
+  background: #0c0c0c;
+}
+
+.home-product::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.home-session {
+  min-height: 4.5rem;
+  padding: 0.7rem 0.65rem;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.home-session-proposed {
+  background: rgba(143, 191, 163, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(143, 191, 163, 0.42);
+}
+
+.home-session-race {
+  background: rgba(212, 165, 116, 0.1);
+  box-shadow: inset 1px 0 0 #d4a574;
+}
+
+.home-session-done {
+  box-shadow: inset 2px 0 0 rgba(143, 191, 163, 0.55);
+}
+
+.home-session-ride {
+  box-shadow: inset 2px 0 0 rgba(142, 172, 190, 0.7);
+}
+
+.home-session-rest {
+  min-height: 2.5rem;
+  background: transparent;
+  color: var(--home-text-3);
+}
+
+.home-serif {
+  font-family: var(--font-newsreader), ui-serif, Georgia, serif;
+}
+
+.home-paper {
+  background: #f1efe7;
+  color: #0a0b0a;
+  color-scheme: light;
+}
+
+.home-kicker {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--home-accent);
+}
+
+.home-paper .home-kicker {
+  color: #536355;
+}
+
+.home-display {
+  letter-spacing: -0.068em;
+  line-height: 0.9;
+  font-weight: 530;
 }
 
 .home-cta:hover {
@@ -222,10 +299,12 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-.home-glow {
-  background:
-    radial-gradient(ellipse 56% 38% at 50% 78%, rgba(143, 191, 163, 0.12), transparent 64%),
-    radial-gradient(ellipse 40% 28% at 12% 8%, rgba(245, 245, 243, 0.04), transparent 55%);
+.home-reveal {
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 0.45s ease,
+    transform 0.45s ease;
 }
 
 @keyframes home-ring {
@@ -259,14 +338,6 @@ body {
 
 .home-bar-proposed {
   animation-delay: 1.35s;
-}
-
-.home-reveal {
-  opacity: 0;
-  transform: translateY(18px);
-  transition:
-    opacity 0.55s ease,
-    transform 0.55s ease;
 }
 
 .home-reveal.is-in {

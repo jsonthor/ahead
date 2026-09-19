@@ -1,74 +1,45 @@
-import { BRAND_MARKS } from "@/components/brands/marks";
-
-const live = [
-  { id: "coros" as const, name: "COROS", status: "Live" },
-  { id: "fit" as const, name: "FIT uploads", status: "Live" },
-];
-
-const coming = [
-  { id: "garmin" as const, name: "Garmin" },
-  { id: "polar" as const, name: "Polar" },
-  { id: "wahoo" as const, name: "Wahoo" },
+const sources = [
+  { name: "COROS", status: "Live" },
+  { name: "FIT uploads", status: "Live" },
+  { name: "Garmin", status: "Coming" },
+  { name: "Polar", status: "Coming" },
+  { name: "Wahoo", status: "Coming" },
 ];
 
 export function HomeIngest() {
   return (
     <section
       id="calendar"
-      className="scroll-mt-24 border-y border-[var(--home-border)] bg-[var(--home-bg-2)] px-4 py-24 sm:px-6 lg:px-8"
+      className="home-paper scroll-mt-24 px-4 py-24 sm:px-6 lg:px-8 lg:py-36"
     >
-      <div className="mx-auto max-w-[1360px]">
-        <p className="home-mono text-[11px] tracking-[0.18em] text-[var(--home-text-3)] uppercase">
-          Bring the training you already do
-        </p>
-        <h2 className="mt-4 max-w-[16ch] text-4xl leading-[0.94] font-medium tracking-[-0.045em] text-[var(--home-text)] sm:text-6xl">
-          You don’t have to hand your training over to Ahead.
-        </h2>
-        <p className="mt-7 max-w-xl text-[17px] leading-7 text-[var(--home-text-2)] sm:text-[18px] sm:leading-8">
-          Club nights. Races. Coach-prescribed sessions. Solo rides. Runs. The
-          45-minute session you squeezed in because that was all you had.
-        </p>
-        <p className="mt-4 max-w-xl text-[17px] leading-7 text-[var(--home-text-2)] sm:text-[18px] sm:leading-8">
-          Ahead works around the training you actually do.
-        </p>
+      <div className="mx-auto max-w-[1470px]">
+        <div className="grid gap-10 lg:grid-cols-[1.25fr_0.75fr] lg:items-end lg:gap-20">
+          <div>
+            <p className="home-kicker">Bring the training you already do</p>
+            <h2 className="home-display mt-8 text-[clamp(3.2rem,6.8vw,7rem)]">
+              Your plan does not
+              <span className="block">have to start here.</span>
+            </h2>
+          </div>
+          <p className="max-w-md text-[18px] leading-[1.56] text-black/55">
+            Club nights. Races. Coach-prescribed sessions. The 45 minutes you
+            squeezed in because that was all you had. Ahead works around that.
+          </p>
+        </div>
 
-        <ul className="mt-12 flex flex-wrap items-center gap-x-8 gap-y-6">
-          {live.map((item) => {
-            const Mark = BRAND_MARKS[item.id];
-            return (
-              <li key={item.id} className="flex items-center gap-3">
-                <Mark width={28} height={28} className="h-7 w-7" />
-                <span>
-                  <span className="block text-[14px] text-[var(--home-text)]">
-                    {item.name}
-                  </span>
-                  <span className="home-mono text-[11px] tracking-[0.14em] text-[var(--home-accent)] uppercase">
-                    {item.status}
-                  </span>
-                </span>
-              </li>
-            );
-          })}
-          {coming.map((item) => {
-            const Mark = BRAND_MARKS[item.id];
-            return (
-              <li key={item.id} className="flex items-center gap-3 opacity-45">
-                <Mark width={28} height={28} className="h-7 w-7 grayscale" />
-                <span>
-                  <span className="block text-[14px] text-[var(--home-text)]">
-                    {item.name}
-                  </span>
-                  <span className="home-mono text-[11px] tracking-[0.14em] text-[var(--home-text-3)] uppercase">
-                    Coming
-                  </span>
-                </span>
-              </li>
-            );
-          })}
+        <ul className="mt-16 grid border-t border-black/15 sm:grid-cols-2 lg:grid-cols-5">
+          {sources.map((item) => (
+            <li
+              key={item.name}
+              className="flex min-h-[8rem] flex-col justify-between border-b border-black/15 px-4 py-5 lg:border-r lg:border-b-0 lg:last:border-r-0"
+            >
+              <p className="text-[1.4rem] tracking-[-0.04em]">{item.name}</p>
+              <p className="home-mono text-[8px] tracking-[0.17em] text-[#536355] uppercase">
+                {item.status}
+              </p>
+            </li>
+          ))}
         </ul>
-        <p className="mt-5 text-[13px] text-[var(--home-text-3)]">
-          More integrations are on the way.
-        </p>
       </div>
     </section>
   );

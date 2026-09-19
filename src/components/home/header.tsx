@@ -13,11 +13,11 @@ const links = [
 export function HomeHeader() {
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-[var(--home-border)] bg-[#050505]">
-        <div className="mx-auto flex h-[4.25rem] max-w-[1360px] items-center justify-between px-4 sm:h-[4.75rem] sm:px-6 lg:px-8">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-line bg-paper">
+        <div className="mx-auto flex h-[4.25rem] max-w-[1440px] items-center justify-between px-4 sm:h-[4.75rem] sm:px-6 lg:px-8">
           <Link
             href="/"
-            className="text-[1.35rem] font-semibold tracking-tight text-[var(--home-text)] sm:text-[1.5rem]"
+            className="text-[1.35rem] font-semibold tracking-tight text-ink sm:text-[1.5rem]"
           >
             Ahead
           </Link>
@@ -30,7 +30,7 @@ export function HomeHeader() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="inline-flex h-11 items-center px-3.5 text-[16px] text-[var(--home-text-2)] transition-colors hover:text-[var(--home-text)]"
+                className="inline-flex h-11 items-center px-3 text-[16px] text-ink-soft transition-colors hover:text-ink sm:px-4"
               >
                 {link.label}
               </Link>
@@ -40,7 +40,7 @@ export function HomeHeader() {
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/login"
-              className="inline-flex h-11 items-center px-3 text-[16px] text-[var(--home-text-2)] transition-colors hover:text-[var(--home-text)] sm:px-4"
+              className="inline-flex h-11 items-center px-3 text-[16px] text-ink-soft transition-colors hover:text-ink sm:px-4"
             >
               Log in
             </Link>
@@ -52,7 +52,7 @@ export function HomeHeader() {
               <Dialog.Trigger asChild>
                 <button
                   type="button"
-                  className="inline-flex h-11 w-11 items-center justify-center text-[var(--home-text)] md:hidden"
+                  className="inline-flex h-11 w-11 items-center justify-center text-ink md:hidden"
                   aria-label="Open menu"
                 >
                   <MenuIcon />
@@ -60,7 +60,7 @@ export function HomeHeader() {
               </Dialog.Trigger>
               <Dialog.Portal>
                 <Dialog.Overlay className="fixed inset-0 z-[100] bg-black/70 md:hidden" />
-                <Dialog.Content className="fixed inset-x-0 top-0 z-[100] border-b border-[var(--home-border)] bg-[var(--home-bg)] p-4 md:hidden">
+                <Dialog.Content className="fixed inset-x-0 top-0 z-[100] border-b border-line bg-paper p-4 md:hidden">
                   <VisuallyHidden>
                     <Dialog.Title>Navigation</Dialog.Title>
                     <Dialog.Description>
@@ -68,13 +68,13 @@ export function HomeHeader() {
                     </Dialog.Description>
                   </VisuallyHidden>
                   <div className="flex items-center justify-between">
-                    <span className="text-[1.35rem] font-semibold text-[var(--home-text)]">
+                    <span className="text-[1.35rem] font-semibold tracking-tight text-ink">
                       Ahead
                     </span>
                     <Dialog.Close asChild>
                       <button
                         type="button"
-                        className="inline-flex h-11 w-11 items-center justify-center text-[var(--home-text)]"
+                        className="inline-flex h-11 w-11 items-center justify-center text-ink"
                         aria-label="Close menu"
                       >
                         <CloseIcon />
@@ -86,7 +86,7 @@ export function HomeHeader() {
                       <Dialog.Close key={link.href} asChild>
                         <Link
                           href={link.href}
-                          className="px-1 py-3 text-lg text-[var(--home-text)]"
+                          className="px-1 py-3 text-[17px] text-ink"
                         >
                           {link.label}
                         </Link>
@@ -95,13 +95,13 @@ export function HomeHeader() {
                     <Dialog.Close asChild>
                       <Link
                         href="/login"
-                        className="px-1 py-3 text-lg text-[var(--home-text)]"
+                        className="px-1 py-3 text-[17px] text-ink"
                       >
                         Log in
                       </Link>
                     </Dialog.Close>
                     <Dialog.Close asChild>
-                      <Link href="/signup" className="home-cta mt-2 w-full">
+                      <Link href="/signup" className="home-cta mt-3 w-full">
                         Coming soon
                       </Link>
                     </Dialog.Close>
@@ -119,11 +119,11 @@ export function HomeHeader() {
 
 function MenuIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true">
       <path
         d="M3 5h14M3 10h14M3 15h14"
         stroke="currentColor"
-        strokeWidth="1.75"
+        strokeWidth="1.5"
         strokeLinecap="square"
       />
     </svg>
@@ -132,11 +132,11 @@ function MenuIcon() {
 
 function CloseIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true">
       <path
         d="M4 4l12 12M16 4L4 16"
         stroke="currentColor"
-        strokeWidth="1.75"
+        strokeWidth="1.5"
         strokeLinecap="square"
       />
     </svg>

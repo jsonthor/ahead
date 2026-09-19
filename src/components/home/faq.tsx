@@ -33,49 +33,44 @@ export function HomeFaq() {
   return (
     <section
       id="faq"
-      className="scroll-mt-24 border-t border-[var(--home-border)] px-4 py-24 sm:px-6 lg:px-8"
+      className="home-paper scroll-mt-24 px-4 py-24 sm:px-6 lg:px-8 lg:py-36"
     >
-      <div className="mx-auto max-w-[1360px]">
-        <h2 className="text-4xl font-medium tracking-[-0.045em] text-[var(--home-text)] sm:text-6xl">
-          Questions
+      <div className="mx-auto max-w-[1470px]">
+        <p className="home-kicker">Before a season</p>
+        <h2 className="home-display mt-8 text-[clamp(3.6rem,8vw,7.8rem)]">
+          Questions.
         </h2>
-        <Accordion.Root
-          type="single"
-          collapsible
-          className="mt-10 border-t border-[var(--home-border)]"
-        >
+        <Accordion.Root type="single" collapsible className="mt-16">
           {items.map((item, index) => (
             <Accordion.Item
               key={item.q}
               value={item.q}
-              className="border-b border-[var(--home-border)]"
+              className="border-t border-black/15 last:border-b"
             >
               <Accordion.Header>
-                <Accordion.Trigger className="group flex w-full items-baseline justify-between gap-6 py-5 text-left">
-                  <span className="flex min-w-0 items-baseline gap-4">
-                    <span className="home-mono hidden w-6 shrink-0 text-[12px] text-[var(--home-text-3)] sm:inline">
-                      0{index + 1}
-                    </span>
-                    <span className="text-[1.05rem] tracking-tight text-[var(--home-text)] sm:text-[1.2rem]">
-                      {item.q}
-                    </span>
+                <Accordion.Trigger className="group grid w-full grid-cols-[3.25rem_minmax(0,1fr)_1.5rem] items-center gap-3 py-7 text-left sm:grid-cols-[3.6rem_minmax(0,1fr)_1.75rem]">
+                  <span className="home-mono text-[9px] tracking-[0.14em] text-black/45">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <span className="text-[1.05rem] tracking-[-0.02em] sm:text-[1.25rem]">
+                    {item.q}
                   </span>
                   <span
                     aria-hidden
-                    className="home-mono text-sm text-[var(--home-text-3)] group-data-[state=open]:hidden"
+                    className="text-right text-[1.25rem] text-black/45 group-data-[state=open]:hidden"
                   >
                     +
                   </span>
                   <span
                     aria-hidden
-                    className="home-mono hidden text-sm text-[var(--home-text-3)] group-data-[state=open]:inline"
+                    className="hidden text-right text-[1.25rem] text-black/45 group-data-[state=open]:inline"
                   >
                     −
                   </span>
                 </Accordion.Trigger>
               </Accordion.Header>
               <Accordion.Content>
-                <p className="max-w-2xl pb-6 text-[16px] leading-7 text-[var(--home-text-2)] sm:pl-10">
+                <p className="max-w-3xl pb-7 pl-[3.25rem] text-[16px] leading-7 text-black/55 sm:pl-[3.6rem]">
                   {item.a}
                 </p>
               </Accordion.Content>

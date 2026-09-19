@@ -1,10 +1,11 @@
 import Link from "next/link";
 
-import { HomeAsk, HomeApplyDemo } from "@/components/home/apply-demo";
+import { HomeApplyDemo } from "@/components/home/apply-demo";
 import { HomeFaq } from "@/components/home/faq";
 import { HomeFooter } from "@/components/home/footer";
 import { HomeHeader } from "@/components/home/header";
 import { HomeHero } from "@/components/home/hero";
+import { HomePhoto } from "@/components/home/photo";
 import { HomeHistory } from "@/components/home/history";
 import { HomeIngest } from "@/components/home/ingest";
 import { HomeMemory } from "@/components/home/memory";
@@ -28,53 +29,43 @@ export default function Home() {
 
         <main id="main">
           <HomeHero />
-
-          <HomeReveal>
-            <HomeQuestions />
-          </HomeReveal>
-          <HomeReveal>
-            <HomeAsk />
-          </HomeReveal>
-          <HomeReveal>
-            <HomeHistory />
-          </HomeReveal>
-          <HomeReveal>
-            <HomeApplyDemo />
-          </HomeReveal>
+          <HomeQuestions />
+          <HomeApplyDemo />
+          <HomeHistory />
           <HomeReveal>
             <HomeMemory />
           </HomeReveal>
           <HomeReveal>
             <HomeMetrics />
           </HomeReveal>
-          <HomeReveal>
-            <HomeIngest />
-          </HomeReveal>
+          <HomeIngest />
           <HomeReveal>
             <HomeTrust />
           </HomeReveal>
-          <HomeReveal>
-            <HomeFaq />
-          </HomeReveal>
+          <HomeFaq />
 
-          <section className="border-t border-[var(--home-border)] px-4 py-28 sm:px-6 lg:px-8">
-            <div className="mx-auto flex max-w-[1360px] flex-col items-start gap-10 lg:flex-row lg:items-center lg:justify-between">
-              <div className="max-w-2xl">
-                <h2 className="text-5xl leading-[0.94] font-medium tracking-[-0.05em] text-[var(--home-text)] sm:text-7xl">
-                  Stop guessing whether
-                  <span className="mt-2 block">the work is working.</span>
-                </h2>
-                <p className="mt-7 max-w-lg text-[18px] leading-8 text-[var(--home-text-2)]">
-                  Connect your training. Add your races. Ask Ahead.
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-4">
+          <section className="relative min-h-[76vh] overflow-hidden">
+            <HomePhoto
+              src="/home/after.jpg"
+              alt="An athlete sitting beside a bike after a session"
+              objectPosition="70% 45%"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-black/20" />
+            <div className="relative z-10 mx-auto flex min-h-[76vh] max-w-[1470px] flex-col items-start justify-end px-4 py-24 sm:px-6 lg:px-8 lg:py-28">
+              <h2 className="home-display max-w-4xl text-[clamp(3rem,6vw,7.2rem)] text-white">
+                Stop guessing whether
+                <span className="block">the work is working.</span>
+              </h2>
+              <p className="mt-8 max-w-md text-[17px] leading-8 text-white/70">
+                Connect your training. Add your races. Ask Ahead.
+              </p>
+              <div className="mt-10 flex flex-wrap items-center gap-5">
                 <Link href="/signup" className="home-cta">
                   Coming soon
                 </Link>
                 <Link
                   href="/login"
-                  className="inline-flex h-12 items-center text-sm text-[var(--home-text-2)] hover:text-[var(--home-text)]"
+                  className="inline-flex h-11 items-center text-[14px] text-white/60 hover:text-white"
                 >
                   Log in
                 </Link>
