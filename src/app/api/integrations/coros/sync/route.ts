@@ -1,6 +1,6 @@
-import { openCorosClient } from "@/lib/coros/connect";
-import { importRecentCorosActivities } from "@/lib/coros/import";
+import { syncCorosAthlete } from "@/lib/coros/auto-sync";
 import type { ImportProgress } from "@/lib/coros/progress";
+import { requestOrigin } from "@/lib/oauth";
 import { createClient } from "@/lib/supabase/server";
 
 export const maxDuration = 300;
@@ -11,7 +11,7 @@ function encodeLine(progress: ImportProgress) {
 }
 
 export async function POST(request: Request) {
-  const origin = new URL(request.url).origin;
+  const origin = requestOrigin(request);
   const supabase = await createClient();
   const {
     data: { user },
@@ -34,12 +34,12 @@ export async function POST(request: Request) {
           total: 0,
           saved: 0,
         });
-        const session = await openCorosClient({
+        const result = await syncCorosAthlete({
           origin,
           athleteId: user.id,
-          returnPath: "/app",
+          onProgress: send,
         });
-        if ("unauthorized" in session && session.unauthorized) {
+        if (result.status === "reauth") {
           send({
             phase: "error",
             message: "COROS needs permission again.",
@@ -48,15 +48,7 @@ export async function POST(request: Request) {
             saved: 0,
             reauth: true,
           });
-          controller.close();
-          return;
         }
-        await importRecentCorosActivities({
-          client: session.client,
-          athleteId: user.id,
-          onProgress: send,
-        });
-        await session.client.close();
       } catch (error) {
         console.error("COROS sync failed", error);
         send({

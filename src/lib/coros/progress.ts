@@ -1,3 +1,5 @@
+export const COROS_SYNC_STALE_MS = 20 * 60 * 1000;
+
 export type ImportProgress = {
   phase: "listing" | "activities" | "fit" | "wellness" | "load" | "done" | "error";
   message: string;

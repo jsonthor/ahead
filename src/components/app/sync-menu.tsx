@@ -1,7 +1,7 @@
 "use client";
 
 import { notifyCalendarChanged } from "@/lib/calendar-event";
-import { readImportProgress } from "@/lib/coros/progress";
+import { COROS_SYNC_STALE_MS, readImportProgress } from "@/lib/coros/progress";
 import {
   isConnected,
   loadIntegrations,
@@ -21,6 +21,8 @@ type SyncState = {
   message: string;
 };
 
+let autoSyncStarted = false;
+
 function syncableFrom(state: Awaited<ReturnType<typeof loadIntegrations>>) {
   return PROVIDERS.filter(
     (provider) =>
@@ -28,6 +30,17 @@ function syncableFrom(state: Awaited<ReturnType<typeof loadIntegrations>>) {
       provider.live &&
       isConnected(state, provider.id),
   );
+}
+
+function staleProviders(state: Awaited<ReturnType<typeof loadIntegrations>>) {
+  const now = Date.now();
+  return syncableFrom(state).filter((provider) => {
+    const last = state.connections.find((row) => row.provider === provider.id)?.lastSyncAt;
+    if (!last) {
+      return true;
+    }
+    return now - Date.parse(last) >= COROS_SYNC_STALE_MS;
+  });
 }
 
 export function SyncMenu() {
@@ -38,7 +51,14 @@ export function SyncMenu() {
 
   useEffect(() => {
     void loadIntegrations().then((state) => {
-      setSources(syncableFrom(state));
+      const next = syncableFrom(state);
+      setSources(next);
+      const due = staleProviders(state)[0];
+      if (!due || autoSyncStarted) {
+        return;
+      }
+      autoSyncStarted = true;
+      void syncProvider(due);
     });
   }, []);
 
