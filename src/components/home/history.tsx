@@ -54,34 +54,26 @@ export function HomeHistory() {
         <div className="flex flex-col justify-center px-4 py-20 sm:px-8 lg:px-12">
           <p className="home-kicker">Your own baseline</p>
           <h2 className="home-display mt-8 text-[clamp(3.2rem,6.8vw,7rem)] text-[var(--home-text)]">
-            Same loop.
+            Same route.
             <span className="block">Less effort.</span>
           </h2>
           <p className="mt-9 max-w-md text-[18px] leading-[1.55] text-[var(--home-text-2)]">
-            Training progress is not always a bigger Fitness number. Sometimes
-            it is riding the same road faster at the same heart rate. Ahead
-            looks for evidence in the training you already repeat.
+            Some progress is easier to see than to model. Ahead compares
+            repeated routes against your own history so you can see when the
+            same effort starts producing more.
           </p>
         </div>
       </div>
 
       <div className="home-paper px-4 py-24 sm:px-6 lg:px-8 lg:py-36">
         <div className="mx-auto max-w-[1470px]">
-          <div className="grid gap-10 lg:grid-cols-[1.25fr_0.75fr] lg:items-end lg:gap-20">
-            <div>
-              <p className="home-kicker">Ask your history</p>
-              <h2 className="home-display mt-8 text-[clamp(3.2rem,6.8vw,7rem)]">
-                Last week.
-                <span className="block">Last season.</span>
-              </h2>
-            </div>
-            <p className="max-w-md text-[18px] leading-[1.52] text-black/55">
-              Ask about any period. Ahead finds the relevant training and
-              compares it in context.
-            </p>
-          </div>
+          <p className="home-kicker">Ask your history</p>
+          <h2 className="home-display mt-8 text-[clamp(3.2rem,6.8vw,7rem)]">
+            Last week.
+            <span className="block">Last season.</span>
+          </h2>
 
-          <p className="mt-20 border-y border-black/15 py-6 text-[clamp(1.4rem,2.3vw,2.5rem)] tracking-[-0.04em]">
+          <p className="mt-16 border-y border-black/15 py-6 text-[clamp(1.4rem,2.3vw,2.5rem)] tracking-[-0.04em]">
             Compare the four weeks before Assen with the four weeks after.
           </p>
 
@@ -126,11 +118,6 @@ export function HomeHistory() {
             </div>
           </div>
 
-          <p className="mt-6 ml-auto max-w-3xl text-[19px] leading-[1.5] text-black/55">
-            Intensity rose after Assen and easy volume fell. Fitness still
-            climbed, but the mix is less like the block that produced the
-            result.
-          </p>
         </div>
       </div>
     </section>

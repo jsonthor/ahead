@@ -7,9 +7,9 @@ const metrics = [
   {
     name: "Readiness",
     display: "49",
-    hint: "Available capacity",
+    hint: "Expressible capacity",
     detail:
-      "How much of your built training capacity appears available right now.",
+      "How much of the training capacity you’ve built you can express right now.",
     primary: true,
   },
   {

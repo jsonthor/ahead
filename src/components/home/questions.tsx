@@ -23,11 +23,11 @@ export function HomeQuestions() {
             Am I actually
             <span className="block">getting fitter?</span>
           </p>
-          <ul className="border-t border-black/15">
+          <ul>
             {questions.map((item) => (
               <li
                 key={item}
-                className="border-b border-black/15 py-4 text-[15px] leading-6"
+                className="border-b border-black/15 py-4 text-[15px] leading-6 last:border-b-0"
               >
                 {item}
               </li>

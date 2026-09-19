@@ -21,7 +21,7 @@ export function HomeTrust() {
                 key={line}
                 className="grid grid-cols-[3.25rem_1fr] items-start border-b border-[var(--home-border)] py-5 text-[14px] leading-6 text-[var(--home-text-2)]"
               >
-                <span className="home-mono text-[9px] tracking-[0.12em] text-[var(--home-accent)]">
+                <span className="home-mono text-[9px] tracking-[0.12em] text-[var(--home-text-3)]">
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 <span>{line}</span>

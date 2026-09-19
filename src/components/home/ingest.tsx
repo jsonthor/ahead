@@ -34,7 +34,13 @@ export function HomeIngest() {
               className="flex min-h-[8rem] flex-col justify-between border-b border-black/15 px-4 py-5 lg:border-r lg:border-b-0 lg:last:border-r-0"
             >
               <p className="text-[1.4rem] tracking-[-0.04em]">{item.name}</p>
-              <p className="home-mono text-[8px] tracking-[0.17em] text-[#536355] uppercase">
+              <p
+                className={`home-mono inline-flex w-fit rounded-full px-2.5 py-1 text-[8px] tracking-[0.14em] uppercase ${
+                  item.status === "Live"
+                    ? "bg-[#00e05a] text-[#04140a]"
+                    : "bg-black/8 text-black/45"
+                }`}
+              >
                 {item.status}
               </p>
             </li>

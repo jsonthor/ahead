@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-import { HomeApplyDemo } from "@/components/home/apply-demo";
 import { HomeFaq } from "@/components/home/faq";
 import { HomeFooter } from "@/components/home/footer";
 import { HomeHeader } from "@/components/home/header";
@@ -32,7 +31,6 @@ export default function Home() {
           <HomeHero />
           <HomeTalk />
           <HomeQuestions />
-          <HomeApplyDemo />
           <HomeHistory />
           <HomeReveal>
             <HomeMemory />

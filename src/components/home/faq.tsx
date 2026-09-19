@@ -13,7 +13,7 @@ const items = [
   },
   {
     q: "What is Readiness?",
-    a: "Readiness estimates how much of the training capacity you’ve built appears available right now. It combines your longer-term aerobic and race-specific work with the temporary effect of recent fatigue.",
+    a: "Readiness estimates how much of the training capacity you’ve built you can express right now. It combines your longer-term aerobic and race-specific work with the temporary effect of recent fatigue.",
   },
   {
     q: "Can Ahead change my calendar?",

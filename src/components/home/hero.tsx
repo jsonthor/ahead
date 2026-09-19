@@ -52,16 +52,16 @@ export function HomeHero() {
               <p className="home-mono text-[clamp(3.6rem,6vw,5.4rem)] leading-none tracking-[-0.08em] text-white [text-shadow:0_1px_18px_rgba(0,0,0,0.45)]">
                 49
               </p>
-              <p className="home-mono mb-1.5 text-[14px] text-[var(--home-cta)]">
-                ↓ 8
-              </p>
+              <div className="mb-1.5">
+                <p className="home-mono text-[14px] text-[var(--home-cta)]">
+                  ↓ 8
+                </p>
+                <ReadinessSpark />
+              </div>
             </div>
-            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
-              <ReadinessSpark />
-              <p className="home-mono text-[10px] tracking-[0.12em] text-white/70 uppercase">
-                since Monday
-              </p>
-            </div>
+            <p className="home-mono mt-3 text-[10px] tracking-[0.12em] text-white/70 uppercase">
+              since Monday
+            </p>
             <p className="mt-3 max-w-[20rem] text-[13px] leading-5 text-white/80 [text-shadow:0_1px_10px_rgba(0,0,0,0.55)]">
               Recent load is suppressing more of your capacity.
             </p>
@@ -87,36 +87,35 @@ export function HomeHero() {
             </div>
 
             <div>
-              <div className="grid grid-cols-[4.2rem_1fr_1fr] items-end gap-x-3 gap-y-2">
-                <span />
-                <p className="home-mono text-[9px] tracking-[0.14em] text-black/40 uppercase">
-                  Before
-                </p>
-                <p className="home-mono text-[9px] tracking-[0.14em] text-black/40 uppercase">
-                  {applied ? "Applied" : "Proposed"}
-                </p>
-
-                <p className="home-mono text-[9px] tracking-[0.1em] text-black/45 uppercase">
-                  Thu 24
-                </p>
+              <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-3">
+                <div>
+                  <p className="home-mono text-[9px] tracking-[0.14em] text-black/40 uppercase">
+                    Before
+                  </p>
+                  <HeroPlan
+                    day="Thu 24"
+                    title="Intervals · 5×5"
+                    struck={!applied}
+                  />
+                  <HeroPlan
+                    day="Fri 25"
+                    title="Threshold · 40m"
+                    struck={!applied}
+                  />
+                </div>
                 <p
-                  className={`text-[13px] leading-5 ${applied ? "text-black/45" : "text-black/40 line-through"}`}
+                  className="self-center pt-4 text-[18px] text-black/25"
+                  aria-hidden
                 >
-                  Intervals · 5×5
+                  →
                 </p>
-                <p className="bg-[var(--home-accent-dim)] px-2 py-1.5 text-[13px] leading-5 shadow-[inset_2px_0_0_var(--home-cta)]">
-                  Recovery · 40m
-                </p>
-
-                <p className="home-mono text-[9px] tracking-[0.1em] text-black/45 uppercase">
-                  Fri 25
-                </p>
-                <p className="text-[13px] leading-5 text-black/55">
-                  Threshold · 40m
-                </p>
-                <p className="bg-[var(--home-accent-dim)] px-2 py-1.5 text-[13px] leading-5 shadow-[inset_2px_0_0_var(--home-cta)]">
-                  Easy · 40m
-                </p>
+                <div>
+                  <p className="home-mono text-[9px] tracking-[0.14em] text-[var(--home-cta)] uppercase">
+                    {applied ? "Applied" : "Ahead proposes"}
+                  </p>
+                  <HeroPlan day="Thu 24" title="Recovery · 40m" proposed />
+                  <HeroPlan day="Fri 25" title="Easy · 40m" proposed />
+                </div>
               </div>
 
               <div className="mt-5">
@@ -174,6 +173,43 @@ export function HomeHero() {
         </aside>
       </div>
     </section>
+  );
+}
+
+function HeroPlan({
+  day,
+  title,
+  proposed,
+  struck,
+}: {
+  day: string;
+  title: string;
+  proposed?: boolean;
+  struck?: boolean;
+}) {
+  return (
+    <div
+      className={`mt-2 px-2.5 py-2.5 ${
+        proposed
+          ? "bg-[var(--home-accent-dim)] shadow-[inset_3px_0_0_var(--home-cta)]"
+          : "bg-black/[0.04]"
+      }`}
+    >
+      <p className="home-mono text-[8px] tracking-[0.12em] text-black/45 uppercase">
+        {day}
+      </p>
+      <p
+        className={`mt-1 text-[13px] leading-5 ${
+          struck
+            ? "text-black/35 line-through"
+            : proposed
+              ? "font-medium text-[#04140a]"
+              : "text-black/55"
+        }`}
+      >
+        {title}
+      </p>
+    </div>
   );
 }
 
