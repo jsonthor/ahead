@@ -5,12 +5,19 @@ import Link from "next/link";
 
 const metrics = [
   {
+    name: "Direction",
+    display: "Building",
+    hint: "The band you want to stay in",
+    detail:
+      "A slow trajectory: Declining, Maintaining, or Building. Strain is the cost of that path, not another band. Confidence is separate. Fitness rising is stimulus, not proof of adaptation.",
+    primary: true,
+  },
+  {
     name: "Readiness",
     display: "49",
-    hint: "Expressible capacity",
+    hint: "Expressible today",
     detail:
-      "How much of the training capacity you’ve built you can express right now.",
-    primary: true,
+      "How much of your built capacity is expressible today.",
   },
   {
     name: "Fitness",
@@ -47,7 +54,7 @@ export function HomeMetrics() {
           </h2>
         </div>
 
-        <dl className="mt-20 grid border-y border-[var(--home-border)] sm:grid-cols-2 lg:grid-cols-[1.3fr_repeat(3,1fr)]">
+        <dl className="mt-20 grid border-y border-[var(--home-border)] sm:grid-cols-2 lg:grid-cols-[1.35fr_1.05fr_repeat(3,0.9fr)]">
           {metrics.map((metric) => (
             <div
               key={metric.name}
@@ -65,7 +72,11 @@ export function HomeMetrics() {
                   <Tooltip.Trigger asChild>
                     <button
                       type="button"
-                      className="home-mono text-[clamp(4.2rem,8vw,8.5rem)] leading-none tracking-[-0.09em]"
+                      className={`home-mono leading-none tracking-[-0.09em] ${
+                        metric.name === "Direction"
+                          ? "text-[clamp(2.6rem,4.4vw,4.6rem)]"
+                          : "text-[clamp(4.2rem,8vw,8.5rem)]"
+                      }`}
                     >
                       {metric.display}
                     </button>
@@ -96,7 +107,7 @@ export function HomeMetrics() {
             href="#faq"
             className="text-[13px] text-[var(--home-text-3)] underline decoration-[var(--home-border)] underline-offset-4 hover:text-[var(--home-text)]"
           >
-            How Readiness works
+            How Direction and Readiness work
           </Link>
         </div>
       </div>

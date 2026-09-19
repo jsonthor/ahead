@@ -20,6 +20,11 @@ import {
   durationLabel,
 } from "@/lib/chat/proposal-view";
 import { notifyCalendarChanged, notifyCalendarPreview } from "@/lib/calendar-event";
+import {
+  DIRECTION_ASK_EVENT,
+  getDirectionSelection,
+  type DirectionAskDetail,
+} from "@/lib/direction-ask";
 import { ChatMarkdown } from "@/components/app/chat-markdown";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
@@ -119,6 +124,19 @@ export function AskPotential() {
     };
   }, []);
 
+  useEffect(() => {
+    function onAsk(event: Event) {
+      const detail = (event as CustomEvent<DirectionAskDetail>).detail;
+      if (!detail?.message) {
+        return;
+      }
+      setOpen(true);
+      void sendMessage(detail.message);
+    }
+    window.addEventListener(DIRECTION_ASK_EVENT, onAsk);
+    return () => window.removeEventListener(DIRECTION_ASK_EVENT, onAsk);
+  }, [busy, conversationId]);
+
   async function send(event: FormEvent) {
     event.preventDefault();
     const content = draft.trim();
@@ -126,6 +144,13 @@ export function AskPotential() {
       return;
     }
     setDraft("");
+    await sendMessage(content);
+  }
+
+  async function sendMessage(content: string) {
+    if (!content || busy) {
+      return;
+    }
     setError(null);
     setBusy(true);
     const pendingId = `local-${Date.now()}`;
@@ -141,6 +166,12 @@ export function AskPotential() {
         uiContext: {
           route: window.location.pathname,
           activityId: new URLSearchParams(window.location.search).get("activity") ?? undefined,
+          ...(getDirectionSelection()
+            ? {
+                directionDate: getDirectionSelection()?.date,
+                direction: getDirectionSelection() ?? undefined,
+              }
+            : {}),
         },
       });
       const reader = response.body!.getReader();

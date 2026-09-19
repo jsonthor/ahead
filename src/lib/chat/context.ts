@@ -3,6 +3,8 @@ import { addDaysToKey, dateKeyInZone } from "@/lib/calendar";
 import { CALENDAR_EVENT_COLUMNS, parseCalendarEvent } from "@/lib/calendar-event";
 import { summarize, type OnboardingAnswers } from "@/lib/onboarding";
 import type { Database, Json } from "@/lib/database.types";
+import { fetchRouteAttempts } from "@/lib/load/direction-data";
+import { DIRECTION_HISTORY_DAYS, inferDirection, isDirectionCalibration } from "@/lib/load/direction";
 import { displayPotential } from "@/lib/load/potential";
 import { displayTrainingState } from "@/lib/load/training-state";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -26,21 +28,23 @@ export async function buildContextPacket(
   timeZone: string,
 ) {
   const today = dateKeyInZone(new Date(), timeZone);
-  const from = addDaysToKey(today, -13);
+  const from = addDaysToKey(today, -(DIRECTION_HISTORY_DAYS - 1));
+  const recentFrom = addDaysToKey(today, -13);
   const to = addDaysToKey(today, 14);
-  const activityFrom = `${addDaysToKey(from, -1)}T00:00:00.000Z`;
+  const activityFrom = `${addDaysToKey(recentFrom, -1)}T00:00:00.000Z`;
   const activityTo = `${addDaysToKey(to, 2)}T00:00:00.000Z`;
 
-  const [profileRes, loadsRes, eventsRes, activitiesRes, memoriesRes] = await Promise.all([
+  const [profileRes, loadsRes, eventsRes, activitiesRes, memoriesRes, routeAttempts] =
+    await Promise.all([
     client
       .from("profiles")
-      .select("display_name, timezone, units, date_of_birth, onboarding")
+      .select("display_name, timezone, units, date_of_birth, onboarding, potential_calibration")
       .eq("id", athleteId)
       .maybeSingle(),
     client
       .from("daily_loads")
       .select(
-        "date, training_load, fitness, fatigue, form, potential, aerobic_reserve, specific_capacity, acute_fatigue",
+        "date, training_load, fitness, fatigue, form, potential, aerobic_reserve, specific_capacity, aerobic_raw, specific_raw, acute_fatigue",
       )
       .gte("date", from)
       .lte("date", today)
@@ -48,7 +52,7 @@ export async function buildContextPacket(
     client
       .from("calendar_items")
       .select(CALENDAR_EVENT_COLUMNS)
-      .gte("date", from)
+      .gte("date", recentFrom)
       .lte("date", to)
       .order("date", { ascending: true }),
     client
@@ -67,13 +71,19 @@ export async function buildContextPacket(
       .is("superseded_at", null)
       .order("importance", { ascending: false })
       .limit(12),
+    fetchRouteAttempts(client, today, DIRECTION_HISTORY_DAYS),
   ]);
 
   const profile = profileRes.data;
   const onboarding = onboardingFrom(profile?.onboarding ?? null);
-  const todayLoad = [...(loadsRes.data ?? [])]
+  const loads = loadsRes.data ?? [];
+  const todayLoad = [...loads]
     .reverse()
     .find((row) => row.date <= today && row.potential != null);
+  const calibration = isDirectionCalibration(profile?.potential_calibration)
+    ? profile.potential_calibration
+    : null;
+  const direction = inferDirection(loads, today, routeAttempts, calibration);
   const shown =
     todayLoad?.fitness != null && todayLoad.fatigue != null
       ? displayTrainingState({
@@ -147,10 +157,28 @@ export async function buildContextPacket(
           fatigue: shown?.fatigue ?? todayLoad.fatigue,
           form: shown?.form ?? todayLoad.form,
           load: todayLoad.training_load,
+          direction: {
+            state: direction.state,
+            label: direction.label,
+            score: direction.score,
+            strain: direction.strain,
+            summary: direction.summary,
+            conclusion: direction.conclusion,
+            confidence: direction.confidence,
+            confidenceLabel: direction.confidenceLabel,
+            performanceNote: direction.performanceNote,
+            explanation: direction.explanation,
+            evidence: direction.evidence,
+            signals: direction.signals,
+            windowLabel: direction.windowLabel,
+            windowDays: direction.windowDays,
+            trajectory: direction.trajectory,
+            trajectoryLabel: direction.trajectoryLabel,
+          },
         }
       : null,
     last14Days: {
-      loads: loadsRes.data ?? [],
+      loads: loads.filter((row) => row.date >= recentFrom),
       events: (eventsRes.data ?? []).map(parseCalendarEvent).map((event) => ({
         id: event.id,
         date: event.date,

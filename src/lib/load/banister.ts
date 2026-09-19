@@ -269,6 +269,8 @@ export async function recomputeDailyLoads(athleteId: string, timeZone: string) {
       form: day.form,
       aerobic_reserve: round1(potential?.aerobic_reserve ?? 0),
       specific_capacity: round1(potential?.specific_capacity ?? 0),
+      aerobic_raw: potential?.aerobic_raw ?? null,
+      specific_raw: potential?.specific_raw ?? null,
       acute_fatigue: round1(potential?.acute_fatigue ?? 0),
       development: null,
       potential: round1(potential?.potential ?? 0),

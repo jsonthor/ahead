@@ -6,6 +6,12 @@ import { useState } from "react";
 
 import { HomePhoto } from "@/components/home/photo";
 
+const HERO_SCORES = [
+  { name: "Fitness", value: "42.9" },
+  { name: "Fatigue", value: "46.7" },
+  { name: "Form", value: "−3.8" },
+];
+
 export function HomeHero({ signedIn = false }: { signedIn?: boolean }) {
   const [applied, setApplied] = useState(false);
 
@@ -44,8 +50,14 @@ export function HomeHero({ signedIn = false }: { signedIn?: boolean }) {
           <div className="absolute inset-0 bg-gradient-to-l from-black/50 via-black/15 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/10" />
 
-          <div className="relative z-10 flex h-full flex-col items-end p-5 text-right sm:p-7 lg:p-8">
+          <div className="relative z-10 flex h-full flex-col items-end justify-center p-5 text-right sm:p-7 lg:p-8">
             <p className="home-mono text-[10px] tracking-[0.16em] text-white/70 uppercase">
+              Direction
+            </p>
+            <p className="home-mono mt-1 text-[clamp(2.4rem,4.6vw,3.6rem)] leading-none tracking-[-0.06em] text-white [text-shadow:0_1px_18px_rgba(0,0,0,0.45)]">
+              Building
+            </p>
+            <p className="home-mono mt-6 text-[10px] tracking-[0.16em] text-white/70 uppercase">
               Readiness
             </p>
             <p className="home-mono mt-1 text-[clamp(3.6rem,6vw,5.4rem)] leading-none tracking-[-0.08em] text-white [text-shadow:0_1px_18px_rgba(0,0,0,0.45)]">
@@ -60,8 +72,23 @@ export function HomeHero({ signedIn = false }: { signedIn?: boolean }) {
             <p className="home-mono mt-3 text-[10px] tracking-[0.12em] text-white/70 uppercase">
               since Monday
             </p>
-            <p className="mt-3 max-w-[18rem] text-[13px] leading-5 text-white/80 [text-shadow:0_1px_10px_rgba(0,0,0,0.55)]">
-              Recent load is suppressing more of your capacity.
+            <dl className="mt-6 w-[9.5rem] space-y-2.5">
+              {HERO_SCORES.map((score) => (
+                <div
+                  key={score.name}
+                  className="flex items-baseline justify-between gap-4"
+                >
+                  <dt className="home-mono text-[9px] tracking-[0.14em] text-white/55 uppercase">
+                    {score.name}
+                  </dt>
+                  <dd className="home-mono text-[1.15rem] leading-none tracking-[-0.04em] text-white [text-shadow:0_1px_12px_rgba(0,0,0,0.45)]">
+                    {score.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <p className="mt-5 max-w-[17rem] text-[13px] leading-5 text-white/80 [text-shadow:0_1px_10px_rgba(0,0,0,0.55)]">
+              Moderate confidence · Performance evidence still limited
             </p>
           </div>
         </div>

@@ -2,7 +2,7 @@
  * Potential v0.4 — how much of the capacity already built is currently
  * expressible, on a 0–100 athlete-relative scale.
  *
- * Not freshness (Fatigue), not engine size (Development), not Race Readiness.
+ * Not freshness (Fatigue), not Direction, not Race Readiness.
  * Built from Potential mix + load. FIT/streams are not required.
  */
 

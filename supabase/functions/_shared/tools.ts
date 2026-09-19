@@ -1,5 +1,11 @@
 import type { UserClient } from "./client.ts";
 import {
+  DIRECTION_HISTORY_DAYS,
+  fetchRouteAttempts,
+  inferDirection,
+  isDirectionCalibration,
+} from "./direction.ts";
+import {
   parseOperations,
   referencedSessionIds,
   SNAPSHOT_COLUMNS,
@@ -12,7 +18,7 @@ const TOOLS = [
     type: "function",
     name: "get_current_training_state",
     description:
-      "The dashboard Today card: Readiness, Fitness, Fatigue, Form from the canonical daily_loads row on or before the date. Already rounded to match the UI. JSON field for Readiness is `potential`. Never recompute these numbers. Does not include calendar — use get_calendar and get_upcoming_races.",
+      "The dashboard summary: Direction (band: Building / Maintaining / Declining / Unknown, plus confidence, strain overlay, and summary) and today's Readiness, Fitness, Fatigue, Form from daily_loads. Do not quote a Direction number. Fitness rising is stimulus, not proof of gain. Already rounded to match the UI. JSON field for Readiness is `potential`. Never recompute these numbers. Does not include calendar — use get_calendar and get_upcoming_races.",
     parameters: {
       type: "object",
       additionalProperties: false,
@@ -325,10 +331,56 @@ export async function executeTool(
   const { name, args, athleteId, timeZone, conversationId } = input;
 
   if (name === "get_current_training_state") {
-    const { data, error } = await client.rpc("ai_current_training_state", {
-      p_date: str(args.date) || undefined,
-    });
-    return { result: error ? { error: error.message } : data };
+    const asOf = str(args.date) || todayKey(timeZone);
+    const [{ data, error }, series, profile] = await Promise.all([
+      client.rpc("ai_current_training_state", {
+        p_date: str(args.date) || undefined,
+      }),
+      client
+        .from("daily_loads")
+        .select(
+          "date, training_load, fitness, fatigue, form, potential, aerobic_reserve, specific_capacity, aerobic_raw, specific_raw",
+        )
+        .lte("date", asOf)
+        .order("date", { ascending: false })
+        .limit(DIRECTION_HISTORY_DAYS),
+      client.from("profiles").select("potential_calibration").eq("id", athleteId).maybeSingle(),
+    ]);
+    if (error) {
+      return { result: { error: error.message } };
+    }
+    const attempts = await fetchRouteAttempts(client, asOf);
+    const direction = inferDirection(
+      [...(series.data ?? [])].reverse(),
+      asOf,
+      attempts,
+      isDirectionCalibration(profile.data?.potential_calibration)
+        ? profile.data.potential_calibration
+        : null,
+    );
+    return {
+      result: {
+        ...(data && typeof data === "object" ? data : { data }),
+        direction: {
+          state: direction.state,
+          label: direction.label,
+          score: direction.score,
+          strain: direction.strain,
+          summary: direction.summary,
+          conclusion: direction.conclusion,
+          confidence: direction.confidence,
+          confidenceLabel: direction.confidenceLabel,
+          performanceNote: direction.performanceNote,
+          explanation: direction.explanation,
+          evidence: direction.evidence,
+          signals: direction.signals,
+          windowLabel: direction.windowLabel,
+          windowDays: direction.windowDays,
+          trajectory: direction.trajectory,
+          trajectoryLabel: direction.trajectoryLabel,
+        },
+      },
+    };
   }
 
   if (name === "get_training_summary") {

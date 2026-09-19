@@ -128,6 +128,10 @@ export function formatDayAxis(key: string): string {
   return formatUtcKey(key, { day: "numeric", month: "short", year: "2-digit" });
 }
 
+export function formatMonthShort(key: string): string {
+  return formatUtcKey(key, { month: "short" });
+}
+
 export function isoWeekNumber(dayKey: string): number {
   const date = utcNoon(dayKey);
   const weekday = date.getUTCDay() || 7;

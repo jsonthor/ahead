@@ -37,7 +37,18 @@ export async function potentialAiReady() {
 export async function invokePotentialAi(input: {
   conversationId: string | null;
   message: string;
-  uiContext?: { route?: string; visibleDates?: string[]; activityId?: string };
+  uiContext?: {
+    route?: string;
+    visibleDates?: string[];
+    activityId?: string;
+    directionDate?: string;
+    direction?: {
+      date: string;
+      label: string;
+      score: number | null;
+      conclusion: string;
+    };
+  };
 }) {
   const headers = await authHeaders();
   const response = await fetch(functionUrl("potential-ai"), {

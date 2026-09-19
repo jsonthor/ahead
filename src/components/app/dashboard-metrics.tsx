@@ -17,6 +17,15 @@ import {
   unmapFromHundred,
   type PotentialCalibration,
 } from "@/lib/load/potential";
+import { DirectionChart } from "@/components/app/direction-chart";
+import { fetchRouteAttempts } from "@/lib/load/direction-data";
+import {
+  directionTone,
+  inferDirectionSeries,
+  type DirectionDay,
+  type DirectionReading,
+  type RouteResponseAttempt,
+} from "@/lib/load/direction";
 import {
   displayTrainingState,
   formatTrainingMetric,
@@ -48,6 +57,8 @@ type LoadRow = {
   potential: number | null;
   aerobic_reserve: number | null;
   specific_capacity: number | null;
+  aerobic_raw: number | null;
+  specific_raw: number | null;
   acute_fatigue: number | null;
   status: string | null;
 };
@@ -70,12 +81,16 @@ function toDay(row: LoadRow, calibration: PotentialCalibration | null): HistoryD
     aerobic_reserve: aerobic,
     specific_capacity: specific,
     acute_fatigue: suppression,
-    aerobic_raw: calibration
-      ? unmapFromHundred(aerobic, calibration.aerobic_low, calibration.aerobic_high)
-      : 0,
-    specific_raw: calibration
-      ? unmapFromHundred(specific, calibration.specific_low, calibration.specific_high)
-      : 0,
+    aerobic_raw:
+      row.aerobic_raw ??
+      (calibration
+        ? unmapFromHundred(aerobic, calibration.aerobic_low, calibration.aerobic_high)
+        : 0),
+    specific_raw:
+      row.specific_raw ??
+      (calibration
+        ? unmapFromHundred(specific, calibration.specific_low, calibration.specific_high)
+        : 0),
     acute_load: strain * 20,
     acc_load: 20,
   };
@@ -91,6 +106,7 @@ export function DashboardMetrics() {
   const [historyStart, setHistoryStart] = useState<string | null>(null);
   const [range, setRange] = useState<ChartRangeId>("3m");
   const [reload, setReload] = useState(0);
+  const [routeAttempts, setRouteAttempts] = useState<RouteResponseAttempt[]>([]);
 
   useEffect(() => {
     function onChange() {
@@ -103,7 +119,7 @@ export function DashboardMetrics() {
   useEffect(() => {
     const supabase = createClient();
     const columns =
-      "date, training_load, fitness, fatigue, form, potential, aerobic_reserve, specific_capacity, acute_fatigue, status";
+      "date, training_load, fitness, fatigue, form, potential, aerobic_reserve, specific_capacity, aerobic_raw, specific_raw, acute_fatigue, status";
     void supabase
       .from("daily_loads")
       .select(columns)
@@ -167,6 +183,7 @@ export function DashboardMetrics() {
         }
         setRecovery((data as RecoveryObservation[] | null) ?? []);
       });
+    void fetchRouteAttempts(supabase, today).then(setRouteAttempts);
   }, [reload, today, user.id]);
 
   const actual = useMemo(
@@ -185,6 +202,28 @@ export function DashboardMetrics() {
     const from = addDaysToKey(today, -(selected.days - 1));
     return actual.filter((row) => row.date >= from);
   }, [actual, range, today]);
+  const directionDays = useMemo<DirectionDay[]>(
+    () =>
+      (rows ?? [])
+        .filter((row) => row.status !== "forecast")
+        .map((row) => ({
+          date: row.date,
+          training_load: row.training_load,
+          fitness: row.fitness,
+          fatigue: row.fatigue,
+          form: row.form,
+          potential: row.potential,
+          aerobic_reserve: row.aerobic_reserve,
+          specific_capacity: row.specific_capacity,
+          aerobic_raw: row.aerobic_raw,
+          specific_raw: row.specific_raw,
+        })),
+    [rows],
+  );
+  const directionSeries = useMemo(
+    () => inferDirectionSeries(directionDays, today, routeAttempts, calibration),
+    [calibration, directionDays, routeAttempts, today],
+  );
 
   if (rows == null || headline === undefined) {
     return (
@@ -216,13 +255,30 @@ export function DashboardMetrics() {
   const potential = displayPotential(current.potential);
   const establishing = isEstablishing(historyStart, today);
   const days = historyDays(historyStart, today);
+  const direction = directionSeries.at(-1) ?? {
+    state: "unknown" as const,
+    label: "Unknown",
+    score: null,
+    strain: false,
+    summary: "A few more weeks of completed training before Direction is a fair reading.",
+    conclusion: "A few more weeks of completed training before Direction is a fair reading.",
+    confidence: "low" as const,
+    confidenceLabel: "Low confidence",
+    performanceNote: null,
+    explanation: "",
+    evidence: [],
+    signals: [],
+    windowLabel: "Previous 3 weeks",
+    windowDays: 0,
+    asOf: null,
+    trajectory: null,
+    trajectoryLabel: null,
+  };
+  const weekAgo = addDaysToKey(today, -7);
+  const prior = [...actual].reverse().find((row) => row.date <= weekAgo);
+  const readinessDelta =
+    prior != null ? potential - displayPotential(prior.potential) : null;
   const cards = [
-    {
-      id: "potential",
-      label: "Readiness",
-      value: String(potential),
-      body: "Expressible capacity",
-    },
     {
       id: "fitness",
       label: "Fitness",
@@ -246,22 +302,46 @@ export function DashboardMetrics() {
   return (
     <>
       <section className="mt-10">
-        <p className="kicker">Today</p>
-        <dl className="mt-3 grid gap-px overflow-hidden border border-line bg-line sm:grid-cols-4">
+        <p className="kicker">Now</p>
+        <div className="mt-3 grid gap-px overflow-hidden border border-line bg-line sm:grid-cols-2">
+          <DirectionWhy
+            reading={direction}
+            series={directionSeries}
+            today={today}
+          />
+          <div className="bg-paper-raised px-5 py-6">
+            <p className="kicker">Readiness</p>
+            <div className="mt-2 flex items-end gap-3">
+              <PotentialWhy
+                potential={potential}
+                aerobic={displayPotential(current.aerobic_reserve)}
+                specific={displayPotential(current.specific_capacity)}
+                suppression={displayPotential(current.acute_fatigue)}
+              />
+              {readinessDelta != null && readinessDelta !== 0 ? (
+                <p
+                  className={`mb-1 text-sm ${
+                    readinessDelta < 0 ? "text-ember" : "text-forest"
+                  }`}
+                >
+                  {readinessDelta > 0 ? "↑" : "↓"} {Math.abs(readinessDelta)}
+                </p>
+              ) : null}
+            </div>
+            <p className="mt-3 text-sm text-ink-soft">
+              How much of your built capacity is expressible today.
+            </p>
+          </div>
+        </div>
+      </section>
+      <section className="mt-8">
+        <p className="kicker">What’s driving it</p>
+        <dl className="mt-3 grid gap-px overflow-hidden border border-line bg-line sm:grid-cols-3">
           {cards.map((card) => (
             <div key={card.id} className="bg-paper-raised px-5 py-5">
               <dt className="kicker">{card.label}</dt>
               <dd className="mt-2">
-                {card.id === "potential" ? (
-                  <PotentialWhy
-                    potential={potential}
-                    aerobic={displayPotential(current.aerobic_reserve)}
-                    specific={displayPotential(current.specific_capacity)}
-                    suppression={displayPotential(current.acute_fatigue)}
-                  />
-                ) : (
-                  <span className="metric text-[2rem] text-ink">{card.value}</span>
-                )}
+                <span className="metric text-[2rem] text-ink">{card.value}</span>
               </dd>
               <p className="mt-3 text-sm text-ink-soft">{card.body}</p>
             </div>
@@ -395,6 +475,73 @@ function RangePill({
     <span className={`inline-flex rounded-full border px-2.5 py-[3px] text-[12px] tracking-wide ${tone}`}>
       {label}
     </span>
+  );
+}
+
+function DirectionWhy({
+  reading,
+  series,
+  today,
+}: {
+  reading: DirectionReading;
+  series: DirectionReading[];
+  today: string;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Dialog.Root open={open} onOpenChange={setOpen}>
+      <Dialog.Trigger asChild>
+        <button
+          type="button"
+          className="w-full bg-paper-raised px-5 py-6 text-left transition-colors hover:bg-paper"
+        >
+          <p className="kicker">Direction</p>
+          <div className="mt-2 flex items-end gap-3">
+            <p className={`title text-[2.1rem] ${directionTone(reading.state, reading.strain)}`}>
+              {reading.label}
+            </p>
+            {reading.trajectoryLabel ? (
+              <p className="mb-1.5 text-sm text-ink-soft">{reading.trajectoryLabel}</p>
+            ) : null}
+          </div>
+          <p className="mt-3 max-w-xl text-sm leading-6 text-ink-soft">{reading.summary}</p>
+          <p className="mt-3 text-sm text-ink-soft">
+            <span className="text-ink">{reading.confidenceLabel}</span>
+            {reading.performanceNote ? ` · ${reading.performanceNote}` : null}
+          </p>
+        </button>
+      </Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70" />
+        <Dialog.Content className="fixed top-1/2 left-1/2 z-50 flex max-h-[min(44rem,calc(100svh-2rem))] w-[min(52rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden border border-line bg-paper-raised outline-none">
+          <div className="flex items-center justify-end border-b border-line px-4 py-2">
+            <Dialog.Close asChild>
+              <button
+                type="button"
+                className="inline-flex h-9 items-center rounded-sm px-3 text-sm text-ink-soft hover:bg-paper-sunken hover:text-ink"
+              >
+                Close
+              </button>
+            </Dialog.Close>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto p-6">
+            <Dialog.Title className="title text-[2rem] text-ink">
+              {reading.label}
+            </Dialog.Title>
+            <Dialog.Description className="mt-2 text-sm text-ink-soft">
+              {reading.summary}
+            </Dialog.Description>
+            <div className="mt-5">
+              <DirectionChart
+                points={series}
+                today={today}
+                onAsked={() => setOpen(false)}
+              />
+            </div>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
 

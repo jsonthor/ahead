@@ -1,4 +1,10 @@
 import { athleteAge } from "../_shared/age.ts";
+import {
+  DIRECTION_HISTORY_DAYS,
+  fetchRouteAttempts,
+  inferDirection,
+  isDirectionCalibration,
+} from "../_shared/direction.ts";
 import { corsHeaders, jsonResponse, optionsResponse } from "../_shared/cors.ts";
 import { openaiKey, requireUser, userClient } from "../_shared/client.ts";
 import {
@@ -24,6 +30,13 @@ type UiContext = {
   route?: string;
   visibleDates?: string[];
   activityId?: string;
+  directionDate?: string;
+  direction?: {
+    date: string;
+    label: string;
+    score: number | null;
+    conclusion: string;
+  };
 };
 
 function slimMemories(rows: unknown) {
@@ -85,7 +98,7 @@ Deno.serve(async (req) => {
 
   const { data: profile } = await client
     .from("profiles")
-    .select("display_name, timezone, units, date_of_birth")
+      .select("display_name, timezone, units, date_of_birth, potential_calibration")
     .eq("id", user.id)
     .maybeSingle();
   const timeZone = profile?.timezone || "Europe/London";
@@ -134,10 +147,27 @@ Deno.serve(async (req) => {
     day: "2-digit",
   }).format(new Date());
 
-  const { data: memories } = await client.rpc("search_athlete_memory", {
-    p_query: message,
-    p_limit: 4,
-  });
+  const [{ data: memories }, { data: directionRows }] = await Promise.all([
+    client.rpc("search_athlete_memory", {
+      p_query: message,
+      p_limit: 4,
+    }),
+    client
+      .from("daily_loads")
+      .select(
+        "date, training_load, fitness, fatigue, form, potential, aerobic_reserve, specific_capacity, aerobic_raw, specific_raw",
+      )
+      .lte("date", today)
+      .order("date", { ascending: false })
+      .limit(DIRECTION_HISTORY_DAYS),
+  ]);
+  const attempts = await fetchRouteAttempts(client, today);
+  const direction = inferDirection(
+    [...(directionRows ?? [])].reverse(),
+    today,
+    attempts,
+    isDirectionCalibration(profile?.potential_calibration) ? profile.potential_calibration : null,
+  );
 
   const turnContext = {
     today,
@@ -146,6 +176,24 @@ Deno.serve(async (req) => {
       name: profile?.display_name ?? "Athlete",
       units: profile?.units ?? "metric",
       ...(athleteAge(profile?.date_of_birth, new Date(), timeZone) ?? {}),
+    },
+    direction: {
+      state: direction.state,
+      label: direction.label,
+      score: direction.score,
+      strain: direction.strain,
+      summary: direction.summary,
+      conclusion: direction.conclusion,
+      confidence: direction.confidence,
+      confidenceLabel: direction.confidenceLabel,
+      performanceNote: direction.performanceNote,
+      explanation: direction.explanation,
+      evidence: direction.evidence,
+      signals: direction.signals,
+      windowLabel: direction.windowLabel,
+      windowDays: direction.windowDays,
+      trajectory: direction.trajectory,
+      trajectoryLabel: direction.trajectoryLabel,
     },
     uiContext: body?.uiContext ?? null,
     relevantMemories: slimMemories(memories),

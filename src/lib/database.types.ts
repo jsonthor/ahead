@@ -210,6 +210,8 @@ type DailyLoadRow = {
   form: number | null;
   aerobic_reserve: number | null;
   specific_capacity: number | null;
+  aerobic_raw: number | null;
+  specific_raw: number | null;
   acute_fatigue: number | null;
   development: number | null;
   potential: number | null;
@@ -536,6 +538,8 @@ export type Database = {
           form?: number | null;
           aerobic_reserve?: number | null;
           specific_capacity?: number | null;
+          aerobic_raw?: number | null;
+          specific_raw?: number | null;
           acute_fatigue?: number | null;
           development?: number | null;
           potential?: number | null;
