@@ -227,6 +227,33 @@ type ActivitySessionNoteRow = {
   updated_at: string;
 };
 
+type ActivityInsightRow = {
+  id: string;
+  athlete_id: string;
+  activity_id: string;
+  status: string;
+  headline: string;
+  summary: string;
+  findings: Json;
+  implications: string | null;
+  next_action: string | null;
+  planned_vs_actual: Json | null;
+  confidence: string;
+  fingerprint: string;
+  model: string | null;
+  prompt_version: number;
+  packet_version: number;
+  input_tokens: number | null;
+  cached_input_tokens: number | null;
+  output_tokens: number | null;
+  estimated_cost: number | null;
+  latency_ms: number | null;
+  generated_at: string;
+  superseded_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 type CoachReviewRow = {
   id: string;
   athlete_id: string;
@@ -775,6 +802,37 @@ export type Database = {
           updated_at?: string;
         };
         Update: Partial<ActivitySessionNoteRow>;
+        Relationships: [];
+      };
+      activity_insights: {
+        Row: ActivityInsightRow;
+        Insert: {
+          id?: string;
+          athlete_id: string;
+          activity_id: string;
+          status?: string;
+          headline: string;
+          summary: string;
+          findings?: Json;
+          implications?: string | null;
+          next_action?: string | null;
+          planned_vs_actual?: Json | null;
+          confidence?: string;
+          fingerprint: string;
+          model?: string | null;
+          prompt_version?: number;
+          packet_version?: number;
+          input_tokens?: number | null;
+          cached_input_tokens?: number | null;
+          output_tokens?: number | null;
+          estimated_cost?: number | null;
+          latency_ms?: number | null;
+          generated_at?: string;
+          superseded_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<ActivityInsightRow>;
         Relationships: [];
       };
       coach_reviews: {

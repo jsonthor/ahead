@@ -1,7 +1,7 @@
 "use client";
 
 import { useAppUser } from "@/components/app/app-shell";
-import { formatDayRange, formatDayShort, formatMonthName } from "@/lib/calendar";
+import { formatDayRange, formatDayShort } from "@/lib/calendar";
 import { loadTrainingHistoryDays } from "@/lib/coach-review/history";
 import {
   nextReviewAvailability,
@@ -222,9 +222,10 @@ export function CoachReviewHome() {
 
       {latestMonth ? (
         <section className="mt-8 border border-line bg-paper-raised px-5 py-6">
-          <p className="kicker">Last Coach Review</p>
-          <p className="mt-3 text-sm text-muted">{formatDayShort(latestMonth.periodEnd)}</p>
-          <h2 className="title mt-2 text-[2rem] text-ink">{latestMonth.directionLabel}</h2>
+          <p className="text-sm text-muted">
+            {formatDayRange(latestMonth.periodStart, latestMonth.periodEnd)}
+          </p>
+          <h2 className="title mt-2 text-[2rem] text-ink">{latestMonth.title}</h2>
           <p className="mt-4 text-sm font-medium text-ink">Main lesson</p>
           <p className="mt-1 text-sm leading-6 text-ink-soft">{latestMonth.lessons}</p>
           <p className="mt-4 text-sm font-medium text-ink">Next-block objective</p>
@@ -282,10 +283,10 @@ export function CoachReviewHome() {
                   href={`/app/reviews/${review.id}`}
                   className="flex items-baseline justify-between gap-4 py-3 text-sm hover:bg-paper-sunken"
                 >
-                  <span className="text-muted">{formatDayShort(review.periodEnd)}</span>
-                  <span className="min-w-0 flex-1 text-ink">
-                    {review.nextObjective || formatMonthName(review.periodEnd)}
+                  <span className="text-muted">
+                    {formatDayRange(review.periodStart, review.periodEnd)}
                   </span>
+                  <span className="min-w-0 flex-1 text-ink">{review.title}</span>
                 </Link>
               </li>
             ))}

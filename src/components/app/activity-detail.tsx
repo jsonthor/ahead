@@ -410,26 +410,22 @@ export function ActivityDetail({ id }: { id: string }) {
 
   if (activity === undefined) {
     return (
-      <div>
-        <Dialog.Title className="title text-[2rem] text-ink">
-          Session
-        </Dialog.Title>
-        <Dialog.Description className="mt-2 text-sm text-muted">
-          Loading this session.
-        </Dialog.Description>
-      </div>
+      <>
+        <ActivityHeader />
+        <Dialog.Title className="sr-only">Session</Dialog.Title>
+        <Dialog.Description className="sr-only">Loading this session.</Dialog.Description>
+        <div className="min-h-0 flex-1" />
+      </>
     );
   }
   if (!activity) {
     return (
-      <div>
-        <Dialog.Title className="title text-[2rem] text-ink">
-          Session
-        </Dialog.Title>
-        <Dialog.Description className="mt-3 text-sm text-muted">
-          This session is not in your library.
-        </Dialog.Description>
-      </div>
+      <>
+        <ActivityHeader />
+        <Dialog.Title className="sr-only">Session</Dialog.Title>
+        <Dialog.Description className="sr-only">This session is not in your library.</Dialog.Description>
+        <div className="min-h-0 flex-1" />
+      </>
     );
   }
 
@@ -440,91 +436,95 @@ export function ActivityDetail({ id }: { id: string }) {
       : null);
 
   return (
-    <article>
-      <p
-        className={`mono text-[10px] font-bold tracking-[0.16em] uppercase ${
-          event?.intent === "race" ? "text-ember" : sportTone[activity.sport] ?? "text-rest"
-        }`}
-      >
-        {activity.sport}
-        {event?.intent === "race" || activity.session_type === "race" ? " · race" : ""}
-        {event?.importance ? ` · ${event.importance}` : ""}
-      </p>
-      <Dialog.Title className="title mt-2 text-[2rem] text-ink">
-        {titleFor(activity, event ?? null)}
-      </Dialog.Title>
-      <Dialog.Description className="mt-2 text-[15px] text-ink-soft">
-        {formatActivityWhen(activity.started_at, user.timezone)}
-      </Dialog.Description>
-
-      {event !== undefined ? (
-        <SessionNoteCard activity={activity} event={event} />
-      ) : null}
-
-      {charts?.gps && charts.gps.length > 1 ? (
-        <div className="mt-6">
-          <ActivityMap points={charts.gps} />
-          <RouteHistory activityId={activity.id} sport={activity.sport} />
-        </div>
-      ) : (
-        <RouteHistory activityId={activity.id} sport={activity.sport} />
-      )}
-
-      <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Time" value={formatHms(activity.duration_seconds) ?? formatDuration(activity.duration_seconds)} />
-        <Stat label="Distance" value={formatDistance(activity.distance_m, user.units)} />
-        <Stat
-          label={activity.sport === "ride" ? "Speed" : "Pace"}
-          value={paceForSport(avgSpeed, activity.sport, user.units)}
-        />
-        <Stat label="Elevation" value={formatElevation(activity.elevation_m, user.units)} />
-        <Stat label="Avg HR" value={activity.avg_hr ? `${activity.avg_hr} bpm` : null} />
-        <Stat label="Max HR" value={activity.max_hr ? `${activity.max_hr} bpm` : null} />
-        <Stat label="Power" value={activity.avg_power ? `${activity.avg_power} W` : null} />
-        <Stat
-          label="Load"
-          value={
-            metrics?.potential_load != null ? String(Math.round(metrics.potential_load)) : null
-          }
-          hint={[
-            loadMethodLabel(metrics?.load_method),
-            dataQualityLabel(metrics?.data_quality),
-          ]
-            .filter(Boolean)
-            .join(" · ")}
-        />
-        <Stat
-          label="Cadence"
-          value={
-            activity.avg_cadence
-              ? `${activity.avg_cadence} ${activity.sport === "ride" ? "rpm" : "spm"}`
-              : null
-          }
-        />
-        <Stat
-          label="Intensity"
-          value={metrics?.intensity != null ? String(metrics.intensity) : null}
-        />
+    <article className="flex min-h-0 flex-1 flex-col">
+      <ActivityHeader />
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-8 sm:py-6 lg:grid lg:grid-cols-[minmax(20rem,32rem)_minmax(0,1fr)] lg:gap-10 lg:overflow-hidden">
+      <div className="lg:min-h-0 lg:overflow-y-auto lg:pr-2">
+        <p
+          className={`mono text-[10px] font-bold tracking-[0.16em] uppercase ${
+            event?.intent === "race" ? "text-ember" : sportTone[activity.sport] ?? "text-rest"
+          }`}
+        >
+          {activity.sport}
+          {event?.intent === "race" || activity.session_type === "race" ? " · race" : ""}
+          {event?.importance ? ` · ${event.importance}` : ""}
+        </p>
+        <Dialog.Title className="title mt-2 text-[2rem] text-ink">
+          {titleFor(activity, event ?? null)}
+        </Dialog.Title>
+        <Dialog.Description className="mt-2 text-[15px] text-ink-soft">
+          {formatActivityWhen(activity.started_at, user.timezone)}
+        </Dialog.Description>
+        {event !== undefined ? (
+          <div className="mt-6">
+            <SessionNoteCard activity={activity} event={event} />
+          </div>
+        ) : null}
       </div>
 
-      {metrics?.intensity_classification === "unavailable" ? (
-        <p className="mt-8 border border-line bg-paper-raised px-5 py-4 text-sm leading-6 text-ink">
-          Heart-rate zones unavailable. Ahead doesn&apos;t yet have a reliable
-          maximum for this athlete. Average and session-peak heart rate are
-          still shown.
-        </p>
-      ) : metrics?.intensity_classification === "uncertain" ? (
-        <p className="mt-8 border border-line bg-paper-raised px-5 py-4 text-sm leading-6 text-ink">
-          Heart-rate zones may need calibration.
-          {metrics.intensity_classification_reason
-            ? ` ${metrics.intensity_classification_reason}.`
-            : ""}{" "}
-          Intensity from these zones is not trusted enough to interpret this
-          session.
-        </p>
-      ) : null}
+      <div className="mt-8 grid gap-4 lg:mt-0 lg:min-h-0 lg:content-start lg:overflow-y-auto">
+        {charts?.gps && charts.gps.length > 1 ? (
+          <div>
+            <ActivityMap points={charts.gps} />
+            <RouteHistory activityId={activity.id} sport={activity.sport} />
+          </div>
+        ) : (
+          <RouteHistory activityId={activity.id} sport={activity.sport} />
+        )}
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <Stat label="Time" value={formatHms(activity.duration_seconds) ?? formatDuration(activity.duration_seconds)} />
+          <Stat label="Distance" value={formatDistance(activity.distance_m, user.units)} />
+          <Stat
+            label={activity.sport === "ride" ? "Speed" : "Pace"}
+            value={paceForSport(avgSpeed, activity.sport, user.units)}
+          />
+          <Stat label="Elevation" value={formatElevation(activity.elevation_m, user.units)} />
+          <Stat label="Avg HR" value={activity.avg_hr ? `${activity.avg_hr} bpm` : null} />
+          <Stat label="Max HR" value={activity.max_hr ? `${activity.max_hr} bpm` : null} />
+          <Stat label="Power" value={activity.avg_power ? `${activity.avg_power} W` : null} />
+          <Stat
+            label="Load"
+            value={
+              metrics?.potential_load != null ? String(Math.round(metrics.potential_load)) : null
+            }
+            hint={[
+              loadMethodLabel(metrics?.load_method),
+              dataQualityLabel(metrics?.data_quality),
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          />
+          <Stat
+            label="Cadence"
+            value={
+              activity.avg_cadence
+                ? `${activity.avg_cadence} ${activity.sport === "ride" ? "rpm" : "spm"}`
+                : null
+            }
+          />
+          <Stat
+            label="Intensity"
+            value={metrics?.intensity != null ? String(metrics.intensity) : null}
+          />
+        </div>
 
-      <div className="mt-8 grid gap-4 lg:grid-cols-2">
+        {metrics?.intensity_classification === "unavailable" ? (
+          <p className="border border-line bg-paper-raised px-5 py-4 text-sm leading-6 text-ink">
+            Heart-rate zones unavailable. Ahead doesn&apos;t yet have a reliable
+            maximum for this athlete. Average and session-peak heart rate are
+            still shown.
+          </p>
+        ) : metrics?.intensity_classification === "uncertain" ? (
+          <p className="border border-line bg-paper-raised px-5 py-4 text-sm leading-6 text-ink">
+            Heart-rate zones may need calibration.
+            {metrics.intensity_classification_reason
+              ? ` ${metrics.intensity_classification_reason}.`
+              : ""}{" "}
+            Intensity from these zones is not trusted enough to interpret this
+            session.
+          </p>
+        ) : null}
+
         {mix && metrics?.intensity_classification !== "unavailable" ? (
           <MixBar mix={mix} />
         ) : null}
@@ -536,9 +536,6 @@ export function ActivityDetail({ id }: { id: string }) {
             hrMax={metrics?.hr_model_max}
           />
         ) : null}
-      </div>
-
-      <div className="mt-8 grid gap-4">
         {streamError ? <p className="text-sm text-muted">{streamError}</p> : null}
         {charts?.hr && charts.hr.length > 1 ? (
           <StreamChart
@@ -600,62 +597,78 @@ export function ActivityDetail({ id }: { id: string }) {
             unitLabel={activity.sport === "ride" ? "rpm" : "spm"}
           />
         ) : null}
-      </div>
 
-      {laps.length > 0 ? (
-        <section className="mt-10">
-          <h2 className="title text-[1.85rem] text-ink">Laps</h2>
-          <div className="mt-4 overflow-x-auto rounded-md border border-line">
-            <table className="min-w-full text-left text-[13px]">
-              <thead className="bg-paper text-muted">
-                <tr>
-                  <th className="px-3 py-2 font-medium">Lap</th>
-                  <th className="px-3 py-2 font-medium">Time</th>
-                  <th className="px-3 py-2 font-medium">Distance</th>
-                  <th className="px-3 py-2 font-medium">
-                    {activity.sport === "ride" ? "Speed" : "Pace"}
-                  </th>
-                  <th className="px-3 py-2 font-medium">HR</th>
-                  {laps.some((lap) => lap.avg_power) ? (
-                    <th className="px-3 py-2 font-medium">Power</th>
-                  ) : null}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line bg-paper-raised">
-                {laps.map((lap, index) => {
-                  const speed =
-                    lap.distance_m && lap.duration_seconds
-                      ? lap.distance_m / lap.duration_seconds
-                      : null;
-                  return (
-                    <tr key={lap.id}>
-                      <td className="px-3 py-2 text-ink">{index + 1}</td>
-                      <td className="px-3 py-2 text-ink">
-                        {formatHms(lap.duration_seconds) ?? "—"}
-                      </td>
-                      <td className="px-3 py-2 text-ink">
-                        {formatDistance(lap.distance_m, user.units) ?? "—"}
-                      </td>
-                      <td className="px-3 py-2 text-ink">
-                        {paceForSport(speed, activity.sport, user.units) ?? "—"}
-                      </td>
-                      <td className="px-3 py-2 text-ink">
-                        {lap.avg_hr ? `${lap.avg_hr}` : "—"}
-                      </td>
-                      {laps.some((item) => item.avg_power) ? (
+        {laps.length > 0 ? (
+          <section className="mt-4">
+            <h2 className="kicker">Laps</h2>
+            <div className="mt-4 overflow-x-auto rounded-md border border-line">
+              <table className="min-w-full text-left text-[13px]">
+                <thead className="bg-paper text-muted">
+                  <tr>
+                    <th className="px-3 py-2 font-medium">Lap</th>
+                    <th className="px-3 py-2 font-medium">Time</th>
+                    <th className="px-3 py-2 font-medium">Distance</th>
+                    <th className="px-3 py-2 font-medium">
+                      {activity.sport === "ride" ? "Speed" : "Pace"}
+                    </th>
+                    <th className="px-3 py-2 font-medium">HR</th>
+                    {laps.some((lap) => lap.avg_power) ? (
+                      <th className="px-3 py-2 font-medium">Power</th>
+                    ) : null}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line bg-paper-raised">
+                  {laps.map((lap, index) => {
+                    const speed =
+                      lap.distance_m && lap.duration_seconds
+                        ? lap.distance_m / lap.duration_seconds
+                        : null;
+                    return (
+                      <tr key={lap.id}>
+                        <td className="px-3 py-2 text-ink">{index + 1}</td>
                         <td className="px-3 py-2 text-ink">
-                          {lap.avg_power ? `${lap.avg_power} W` : "—"}
+                          {formatHms(lap.duration_seconds) ?? "—"}
                         </td>
-                      ) : null}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ) : null}
+                        <td className="px-3 py-2 text-ink">
+                          {formatDistance(lap.distance_m, user.units) ?? "—"}
+                        </td>
+                        <td className="px-3 py-2 text-ink">
+                          {paceForSport(speed, activity.sport, user.units) ?? "—"}
+                        </td>
+                        <td className="px-3 py-2 text-ink">
+                          {lap.avg_hr ? `${lap.avg_hr}` : "—"}
+                        </td>
+                        {laps.some((item) => item.avg_power) ? (
+                          <td className="px-3 py-2 text-ink">
+                            {lap.avg_power ? `${lap.avg_power} W` : "—"}
+                          </td>
+                        ) : null}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ) : null}
+      </div>
+      </div>
     </article>
+  );
+}
+
+function ActivityHeader() {
+  return (
+    <header className="flex shrink-0 items-center justify-end border-b border-line px-4 py-2 sm:px-8">
+      <Dialog.Close asChild>
+        <button
+          type="button"
+          className="inline-flex h-9 items-center rounded-sm px-3 text-sm text-ink-soft hover:bg-paper-sunken hover:text-ink"
+        >
+          Close
+        </button>
+      </Dialog.Close>
+    </header>
   );
 }
 

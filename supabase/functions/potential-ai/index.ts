@@ -8,6 +8,7 @@ import {
 import { corsHeaders, jsonResponse, optionsResponse } from "../_shared/cors.ts";
 import { openaiKey, requireUser, userClient } from "../_shared/client.ts";
 import {
+  createActivityInsightResponse,
   createChatResponse,
   createCoachReviewResponse,
   functionCalls,
@@ -45,6 +46,7 @@ type UiContext = {
     latestWeek?: Record<string, unknown> | null;
   };
   sessionNote?: Record<string, unknown> | null;
+  activityInsight?: Record<string, unknown> | null;
   intent?: "build-block" | "session";
 };
 
@@ -103,6 +105,45 @@ Deno.serve(async (req) => {
     packet?: unknown;
     previousReview?: unknown;
   } | null;
+
+  if (body?.mode === "activity-insight") {
+    try {
+      const response = await createActivityInsightResponse([
+        userInputMessage(JSON.stringify({ packet: body.packet ?? null })),
+      ]);
+      const text = outputText(response);
+      if (response.error?.message) {
+        throw new Error(response.error.message);
+      }
+      if (!text.trim()) {
+        throw new Error("Activity Insight returned an empty answer. Try again.");
+      }
+      let insight: unknown;
+      try {
+        insight = JSON.parse(text);
+      } catch {
+        throw new Error("Activity Insight did not return an object.");
+      }
+      return jsonResponse({
+        insight,
+        usage: {
+          model: LUNA_MODEL,
+          input_tokens: response.usage?.input_tokens ?? null,
+          cached_input_tokens: response.usage?.input_tokens_details?.cached_tokens ?? null,
+          output_tokens: response.usage?.output_tokens ?? null,
+        },
+      });
+    } catch (error) {
+      console.error("activity-insight failed", error);
+      return jsonResponse(
+        {
+          error: "generate",
+          message: error instanceof Error ? error.message : "Could not write the insight.",
+        },
+        500,
+      );
+    }
+  }
 
   if (body?.mode === "coach-review") {
     try {

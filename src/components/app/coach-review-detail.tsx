@@ -1,7 +1,7 @@
 "use client";
 
 import { useAppUser } from "@/components/app/app-shell";
-import { formatDayRange } from "@/lib/calendar";
+import { dateKeyInZone, formatDayRange, formatDayTitle } from "@/lib/calendar";
 import {
   askAboutCoachReview,
   buildBlockHref,
@@ -134,6 +134,15 @@ export function CoachReviewDetail({ id }: { id: string }) {
           ) : null}
         </section>
       )}
+
+      <footer className="mt-14 border-t border-line pt-8">
+        <p className="font-serif text-[1.65rem] tracking-tight text-ink">Ahead</p>
+        <p className="mt-1 text-sm text-muted">
+          {formatDayTitle(
+            dateKeyInZone(new Date(review.completedAt || review.createdAt), user.timezone),
+          )}
+        </p>
+      </footer>
 
       <div className="mt-8 flex flex-wrap gap-3">
         {weekly ? null : (

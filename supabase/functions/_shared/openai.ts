@@ -1,4 +1,8 @@
 import {
+  ACTIVITY_INSIGHT_INSTRUCTIONS,
+  ACTIVITY_INSIGHT_SCHEMA,
+} from "./activity-insight.ts";
+import {
   COACH_REVIEW_INSTRUCTIONS,
   COACH_REVIEW_SCHEMA,
 } from "./coach-review.ts";
@@ -146,6 +150,25 @@ export function createChatResponse(input: {
         }
       : {}),
     ...(input.previousResponseId ? { previous_response_id: input.previousResponseId } : {}),
+  });
+}
+
+export function createActivityInsightResponse(input: unknown) {
+  return openaiFetch({
+    model: LUNA_MODEL,
+    reasoning: { effort: "low" },
+    max_output_tokens: 1200,
+    instructions: ACTIVITY_INSIGHT_INSTRUCTIONS,
+    input,
+    store: false,
+    text: {
+      format: {
+        type: "json_schema",
+        name: "activity_insight",
+        strict: true,
+        schema: ACTIVITY_INSIGHT_SCHEMA,
+      },
+    },
   });
 }
 
