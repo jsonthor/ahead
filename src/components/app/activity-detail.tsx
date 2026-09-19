@@ -505,15 +505,7 @@ export function ActivityDetail({ id }: { id: string }) {
       </div>
 
       <div className="mt-8 grid gap-4 lg:mt-0 lg:min-h-0 lg:content-start lg:overflow-y-auto">
-        {charts?.gps && charts.gps.length > 1 ? (
-          <div>
-            <ActivityMap points={charts.gps} />
-            <RouteHistory activityId={activity.id} sport={activity.sport} />
-          </div>
-        ) : (
-          <RouteHistory activityId={activity.id} sport={activity.sport} />
-        )}
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           <Stat label="Time" value={formatHms(activity.duration_seconds) ?? formatDuration(activity.duration_seconds)} />
           <Stat label="Distance" value={formatDistance(activity.distance_m, user.units)} />
           <Stat
@@ -549,7 +541,14 @@ export function ActivityDetail({ id }: { id: string }) {
             value={metrics?.intensity != null ? String(metrics.intensity) : null}
           />
         </div>
-
+        {charts?.gps && charts.gps.length > 1 ? (
+          <div>
+            <ActivityMap points={charts.gps} />
+            <RouteHistory activityId={activity.id} sport={activity.sport} />
+          </div>
+        ) : (
+          <RouteHistory activityId={activity.id} sport={activity.sport} />
+        )}
         {metrics?.intensity_classification === "unavailable" ? (
           <p className="border border-line bg-paper-raised px-5 py-4 text-sm leading-6 text-ink">
             Heart-rate zones unavailable. Ahead doesn&apos;t yet have a reliable

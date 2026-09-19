@@ -55,7 +55,7 @@ export function SessionNoteCard({
   }
 
   return (
-    <section className="border border-line bg-paper-raised px-5 py-5">
+    <section>
       <p className="kicker">This session</p>
       <p className="mt-3 text-[15px] leading-6 text-ink">{note.reading}</p>
       <button
