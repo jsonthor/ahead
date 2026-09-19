@@ -14,7 +14,7 @@ import {
   type OnboardingAnswers,
 } from "@/lib/onboarding";
 import { parseUnits, type Units } from "@/lib/units";
-import type { User } from "@supabase/supabase-js";
+import type { EmailOtpType, User } from "@supabase/supabase-js";
 import type { Json } from "@/lib/database.types";
 
 export type SignUpInput = {
@@ -206,6 +206,95 @@ export async function signUp(
     .eq("id", data.user.id);
 
   return { ok: true, data: { user: await loadUser(data.user) } };
+}
+
+function inviteFailed(): AuthResult<{ user: AuthUser }> {
+  return {
+    ok: false,
+    error: { message: "This invite link is invalid or has expired." },
+  };
+}
+
+export async function establishAuthFromUrl(): Promise<AuthResult<{ user: AuthUser }>> {
+  const supabase = createClient();
+  const url = new URL(window.location.href);
+  const hash = new URLSearchParams(url.hash.replace(/^#/, ""));
+  const code = url.searchParams.get("code");
+  const tokenHash = url.searchParams.get("token_hash") ?? hash.get("token_hash");
+  const type = (url.searchParams.get("type") ?? hash.get("type")) as EmailOtpType | null;
+
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) {
+      return inviteFailed();
+    }
+  } else if (tokenHash && type) {
+    const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
+    if (error) {
+      return inviteFailed();
+    }
+  } else {
+    const accessToken = hash.get("access_token");
+    const refreshToken = hash.get("refresh_token");
+    if (accessToken && refreshToken) {
+      const { error } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+      if (error) {
+        return inviteFailed();
+      }
+    }
+  }
+
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) {
+    return inviteFailed();
+  }
+  return { ok: true, data: { user: await loadUser(data.user) } };
+}
+
+export async function acceptInvite(input: {
+  password: string;
+  displayName: string;
+  units: Units;
+}): Promise<AuthResult<{ user: AuthUser }>> {
+  const nameError = validateDisplayName(input.displayName);
+  if (nameError) {
+    return { ok: false, error: { message: nameError, field: "displayName" } };
+  }
+  const passwordError = validatePassword(input.password);
+  if (passwordError) {
+    return { ok: false, error: { message: passwordError, field: "password" } };
+  }
+
+  const supabase = createClient();
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError || !authData.user) {
+    return inviteFailed();
+  }
+
+  const nextTimezone = timezone();
+  const { error } = await supabase.auth.updateUser({
+    password: input.password,
+    data: {
+      display_name: input.displayName.trim(),
+      timezone: nextTimezone,
+      units: input.units,
+    },
+  });
+  if (error) {
+    return { ok: false, error: mapError(error.message) };
+  }
+
+  await supabase.from("profiles").upsert({
+    id: authData.user.id,
+    display_name: input.displayName.trim(),
+    timezone: nextTimezone,
+    units: input.units,
+  });
+
+  return { ok: true, data: { user: await loadUser(authData.user) } };
 }
 
 export async function signIn(

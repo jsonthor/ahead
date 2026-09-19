@@ -1,3 +1,4 @@
+import { AuthRedirect } from "@/components/auth/auth-redirect";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import "./globals.css";
@@ -30,7 +31,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} h-full bg-[#050505] antialiased`}
     >
-      <body className="min-h-full bg-paper font-sans text-ink">{children}</body>
+      <body className="min-h-full bg-paper font-sans text-ink">
+        <AuthRedirect />
+        {children}
+      </body>
     </html>
   );
 }

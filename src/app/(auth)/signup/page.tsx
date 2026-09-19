@@ -25,7 +25,8 @@ export default function SignupComingSoonPage() {
         </Link>
       </p>
       <p className="mt-6 text-sm text-muted">
-        Already invited? Use the log in link we sent you.
+        Already invited? Open the email we sent and use that link — it will ask
+        you to choose a password.
       </p>
     </div>
   );

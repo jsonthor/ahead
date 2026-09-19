@@ -9,7 +9,25 @@ function isProtectedPath(pathname: string) {
   );
 }
 
+function isAuthCodeLanding(pathname: string) {
+  return (
+    pathname === "/" ||
+    pathname === "/login" ||
+    pathname === "/signup" ||
+    pathname === "/signup/confirm" ||
+    pathname === "/signup/join"
+  );
+}
+
 export async function updateSession(request: NextRequest) {
+  const authCode = request.nextUrl.searchParams.get("code");
+  if (authCode && isAuthCodeLanding(request.nextUrl.pathname)) {
+    const callback = request.nextUrl.clone();
+    callback.pathname = "/auth/callback";
+    callback.searchParams.set("next", "/invite");
+    return NextResponse.redirect(callback);
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   });
