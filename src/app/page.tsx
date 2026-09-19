@@ -70,7 +70,7 @@ export default function Home() {
               </div>
               <div className="flex flex-wrap items-center gap-4">
                 <Link href="/signup" className="home-cta">
-                  Start with Ahead
+                  Coming soon
                 </Link>
                 <Link
                   href="/login"

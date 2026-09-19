@@ -127,7 +127,7 @@ export function HomeHero() {
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-4">
             <Link href="/signup" className="home-cta">
-              Start with Ahead
+              Coming soon
             </Link>
             <a
               href="#how-it-works"

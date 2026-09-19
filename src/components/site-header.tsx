@@ -91,7 +91,7 @@ export function SiteHeader() {
             href="/signup"
             className="inline-flex h-9 items-center rounded-sm bg-forest px-2.5 text-[13px] font-medium text-paper hover:bg-forest-hover sm:px-3 sm:text-sm"
           >
-            Sign up
+            Coming soon
           </Link>
 
           <Dialog.Root>

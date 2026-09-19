@@ -15,7 +15,7 @@ export function SiteFooter() {
           href="/signup"
           className="inline-flex h-10 w-fit items-center rounded-sm border border-line px-4 text-sm text-ink hover:bg-paper-sunken"
         >
-          Sign up
+          Coming soon
         </Link>
       </div>
       <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 pb-8 text-xs text-muted sm:flex-row sm:justify-between sm:px-6">

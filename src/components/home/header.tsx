@@ -45,7 +45,7 @@ export function HomeHeader() {
               Log in
             </Link>
             <Link href="/signup" className="home-cta home-cta-sm">
-              Sign up
+              Coming soon
             </Link>
 
             <Dialog.Root>
@@ -102,7 +102,7 @@ export function HomeHeader() {
                     </Dialog.Close>
                     <Dialog.Close asChild>
                       <Link href="/signup" className="home-cta mt-2 w-full">
-                        Sign up
+                        Coming soon
                       </Link>
                     </Dialog.Close>
                   </nav>

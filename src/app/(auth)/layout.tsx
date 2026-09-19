@@ -20,7 +20,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
               Log in
             </Link>
             <Link href="/signup" className="home-cta home-cta-sm">
-              Sign up
+              Coming soon
             </Link>
           </div>
         </div>

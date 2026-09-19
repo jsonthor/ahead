@@ -118,13 +118,14 @@ export function LoginForm() {
       </form>
 
       <p className="mt-8 text-sm text-muted">
-        New here?{" "}
+        New here? Sign up is{" "}
         <Link
           href="/signup"
           className="text-ink underline-offset-2 hover:underline"
         >
-          Create an account
+          coming soon
         </Link>
+        .
       </p>
     </div>
   );

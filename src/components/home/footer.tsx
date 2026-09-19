@@ -11,7 +11,7 @@ export function HomeFooter() {
           </p>
         </div>
         <p className="home-mono text-[12px] tracking-[0.14em] text-[var(--home-text-3)] uppercase">
-          askahead.app
+          getahead.fit
         </p>
       </div>
       <div className="mx-auto flex max-w-[1360px] flex-col gap-2 px-4 pb-8 text-[11px] tracking-wide text-[var(--home-text-3)] sm:flex-row sm:justify-between sm:px-6 lg:px-8">
