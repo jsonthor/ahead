@@ -5,6 +5,7 @@ import {
   composeCoachReview,
 } from "@/lib/coach-review/compose";
 import type { ReviewPacket } from "@/lib/coach-review/packet";
+import { formatRaceResult } from "@/lib/race-result/types";
 import { daysSince } from "@/lib/coach-review/period";
 import type { CoachReview } from "@/lib/coach-review/types";
 import { supabasePublishableKey, supabaseUrl } from "@/lib/supabase/env";
@@ -66,6 +67,14 @@ function packetBrief(packet: ReviewPacket) {
     directionEnd: packet.directionEnd.label,
     racesInBlock: packet.races.map(sessionBrief),
     raceCount: packet.races.length,
+    raceResults: packet.raceResults.map((row) => ({
+      date: row.date,
+      title: row.title,
+      result: formatRaceResult(row),
+      gap: row.gap,
+      factor: row.factor,
+      status: row.status,
+    })),
     upcomingRaces: packet.upcomingRaces.map(sessionBrief),
     immediateRaces: near.map(sessionBrief),
     fixtures: packet.fixtures.map(sessionBrief),
@@ -78,7 +87,7 @@ function packetBrief(packet: ReviewPacket) {
 
 const SYSTEM = `You are Ahead writing a monthly Coach Review. Do not fill a section merely because the schema contains it. Empty arrays and empty strings are allowed.
 
-Use Specific capacity, Aerobic capacity, and Performance as modeled metrics. A rise in Specific capacity is not race-performance evidence. Do not issue Direction as a second verdict. If the packet still has a Direction label, treat it as legacy and prefer Performance. Do not assess starts, lap fade, technical execution, or race-execution quality. Missing results belong under unknown, not didnt. If nothing obviously went wrong, didnt is []. nextPriorities is always []. Immediate priority must be grounded, not slogans.
+Use Specific capacity, Aerobic capacity, and Performance as modeled metrics. A rise in Specific or Aerobic capacity is training evidence, not race-performance evidence. Race results (place / field / gap / factor) are the competitive outcome. Do not infer placing or "raced well" from HR or pace. Repeated routes are supporting evidence between races. Do not issue Direction as a second verdict. If the packet still has a Direction label, treat it as legacy and prefer Performance. Do not assess starts, lap fade, technical execution, or race-execution quality. Missing results belong under unknown, not didnt. If nothing obviously went wrong, didnt is []. nextPriorities is always []. Immediate priority must be grounded, not slogans.
 
 Return ONLY JSON with this shape:
 {

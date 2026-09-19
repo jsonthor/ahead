@@ -2,7 +2,9 @@
 
 import { ActivityMap } from "@/components/app/activity-map";
 import { RouteHistory } from "@/components/app/route-history";
+import { RaceResultCard } from "@/components/app/race-result";
 import { SessionNoteCard } from "@/components/app/session-note";
+import { isRaceSession } from "@/lib/race-result/types";
 import { useAppUser } from "@/components/app/app-shell";
 import { StreamChart } from "@/components/app/stream-chart";
 import { formatActivityWhen } from "@/lib/calendar";
@@ -22,6 +24,7 @@ import {
 import {
   CALENDAR_EVENT_COLUMNS,
   parseCalendarEvent,
+  unlinkActivityFromCalendar,
   type CalendarEvent,
 } from "@/lib/calendar-event";
 import { createClient } from "@/lib/supabase/client";
@@ -293,6 +296,7 @@ export function ActivityDetail({ id }: { id: string }) {
   const [event, setEvent] = useState<CalendarEvent | null | undefined>(undefined);
   const [stream, setStream] = useState<StreamPoint[]>([]);
   const [streamError, setStreamError] = useState<string | null>(null);
+  const [unlinking, setUnlinking] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -455,6 +459,44 @@ export function ActivityDetail({ id }: { id: string }) {
         <Dialog.Description className="mt-2 text-[15px] text-ink-soft">
           {formatActivityWhen(activity.started_at, user.timezone)}
         </Dialog.Description>
+        {event ? (
+          <button
+            type="button"
+            disabled={unlinking}
+            onClick={() => {
+              setUnlinking(true);
+              void unlinkActivityFromCalendar(createClient(), activity.id)
+                .then(() => {
+                  setEvent(null);
+                })
+                .catch((error) => {
+                  console.error("Unlink session failed", error);
+                })
+                .finally(() => {
+                  setUnlinking(false);
+                });
+            }}
+            className="mt-3 text-[13px] text-ink-soft underline decoration-line decoration-2 underline-offset-4 hover:text-ink hover:decoration-ink disabled:opacity-60"
+          >
+            {unlinking
+              ? "Unlinking…"
+              : event.intent === "race"
+                ? "This wasn’t the race"
+                : "Unlink from the plan"}
+          </button>
+        ) : null}
+        {event !== undefined &&
+        isRaceSession({
+          intent: event?.intent,
+          sessionType: activity.session_type,
+        }) ? (
+          <div className="mt-6">
+            <RaceResultCard
+              activityId={activity.id}
+              calendarItemId={event?.id ?? null}
+            />
+          </div>
+        ) : null}
         {event !== undefined ? (
           <div className="mt-6">
             <SessionNoteCard activity={activity} event={event} />

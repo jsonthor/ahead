@@ -101,7 +101,7 @@ export const CHAT_TOOLS = [
   {
     name: "propose_calendar_changes",
     description:
-      "Draft the diary change in this turn whenever you recommend sessions or a week's shape. Never claim they are saved. The athlete must Apply. Do not wait to be asked to add it. Do not create rest-day events.",
+      "Draft the diary change in this turn whenever you recommend sessions or a week's shape. Never claim they are saved. The athlete must Apply. Do not wait to be asked to add it. Use intent rest only when they want the day marked as rest on the calendar.",
     input_schema: {
       type: "object",
       additionalProperties: false,
@@ -118,7 +118,7 @@ export const CHAT_TOOLS = [
               date: { type: "string" },
               sport: { type: "string" },
               title: { type: "string" },
-              intent: { type: "string", enum: ["training", "race"] },
+              intent: { type: "string", enum: ["training", "race", "rest"] },
               importance: { type: "string", enum: ["A", "B", "C"] },
               planned_seconds: { type: "number" },
               planned_distance_m: { type: "number" },
@@ -166,7 +166,49 @@ export async function executeChatTool(
     if (error) {
       return { result: { error: error.message } };
     }
-    return { result: (data ?? []).map(parseCalendarEvent) };
+    const events = (data ?? []).map(parseCalendarEvent);
+    const raceIds = events
+      .filter((event) => event.intent === "race")
+      .map((event) => event.id);
+    const results = new Map<
+      string,
+      {
+        place: number | null;
+        fieldSize: number | null;
+        category: string | null;
+        gap: string | null;
+        feel: string | null;
+        factor: string | null;
+        status: string;
+      }
+    >();
+    if (raceIds.length > 0) {
+      const { data: rows } = await client
+        .from("race_results")
+        .select(
+          "calendar_item_id, place, field_size, category, gap, feel, factor, status",
+        )
+        .in("calendar_item_id", raceIds);
+      for (const row of rows ?? []) {
+        if (row.calendar_item_id) {
+          results.set(row.calendar_item_id, {
+            place: row.place,
+            fieldSize: row.field_size,
+            category: row.category,
+            gap: row.gap,
+            feel: row.feel,
+            factor: row.factor,
+            status: row.status,
+          });
+        }
+      }
+    }
+    return {
+      result: events.map((event) => ({
+        ...event,
+        result: results.get(event.id) ?? null,
+      })),
+    };
   }
   if (name === "search_activities") {
     const from = str(args.from);

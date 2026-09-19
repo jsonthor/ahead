@@ -109,7 +109,7 @@ const TOOLS = [
     type: "function",
     name: "get_calendar",
     description:
-      "Planned training, rest, and races between two inclusive dates. Cite events by citeAs / title, never by id. For a week recommendation, fetch today through Sunday.",
+      "Planned training, rest, and races between two inclusive dates. Race events include saved result when entered. Cite events by citeAs / title, never by id. For a week recommendation, fetch today through Sunday.",
     parameters: {
       type: "object",
       additionalProperties: false,
@@ -124,7 +124,8 @@ const TOOLS = [
   {
     type: "function",
     name: "get_races",
-    description: "Races on the Potential calendar in an explicit date range. Cite by citeAs / title, never by id.",
+    description:
+      "Races on the Potential calendar in an explicit date range. Includes saved result (place, field, gap, feel, status) when entered — a result can exist without a race file. Cite by citeAs / title, never by id.",
     parameters: {
       type: "object",
       additionalProperties: false,
@@ -271,7 +272,30 @@ function citeAs(row: Record<string, unknown>) {
   return sport || "session";
 }
 
-function presentCalendarItem(row: Record<string, unknown>) {
+function presentResult(row: {
+  place: number | null;
+  field_size: number | null;
+  category: string | null;
+  gap: string | null;
+  feel: string | null;
+  factor: string | null;
+  status: string;
+}) {
+  return {
+    place: row.place,
+    fieldSize: row.field_size,
+    category: row.category,
+    gap: row.gap,
+    feel: row.feel,
+    factor: row.factor,
+    status: row.status,
+  };
+}
+
+function presentCalendarItem(
+  row: Record<string, unknown>,
+  result: ReturnType<typeof presentResult> | null = null,
+) {
   return {
     date: row.date ?? null,
     sport: row.sport ?? null,
@@ -284,15 +308,63 @@ function presentCalendarItem(row: Record<string, unknown>) {
     purpose: row.purpose ?? null,
     notes: row.notes ?? null,
     workout: row.workout ?? null,
+    hasFile: Boolean(row.linked_activity_id),
+    result,
     citeAs: citeAs(row),
     id: row.id ?? null,
   };
 }
 
+async function resultsByCalendarId(client: UserClient, ids: string[]) {
+  const map = new Map<string, ReturnType<typeof presentResult>>();
+  if (ids.length === 0) {
+    return map;
+  }
+  const { data, error } = await client
+    .from("race_results")
+    .select("calendar_item_id, place, field_size, category, gap, feel, factor, status")
+    .in("calendar_item_id", ids);
+  if (error || !data) {
+    return map;
+  }
+  for (const row of data) {
+    if (row.calendar_item_id) {
+      map.set(row.calendar_item_id, presentResult(row));
+    }
+  }
+  return map;
+}
+
+export async function recentRaceResults(client: UserClient, limit = 8) {
+  const { data, error } = await client
+    .from("race_results")
+    .select(
+      "place, field_size, category, gap, feel, factor, status, activity_id, calendar_items(date, title)",
+    )
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error || !data) {
+    return [];
+  }
+  return data.map((row) => {
+    const event = row.calendar_items as
+      | { date?: string; title?: string }
+      | { date?: string; title?: string }[]
+      | null;
+    const item = Array.isArray(event) ? event[0] : event;
+    return {
+      date: item?.date ?? null,
+      title: item?.title ?? null,
+      hasFile: Boolean(row.activity_id),
+      ...presentResult(row),
+    };
+  });
+}
+
 async function fetchRaces(client: UserClient, start: string, end: string) {
   const { data, error } = await client
     .from("calendar_items")
-    .select("id, date, sport, title, importance, planned_seconds, notes, intent")
+    .select("id, date, sport, title, importance, planned_seconds, notes, intent, linked_activity_id")
     .eq("intent", "race")
     .gte("date", start)
     .lte("date", end)
@@ -300,7 +372,14 @@ async function fetchRaces(client: UserClient, start: string, end: string) {
   if (error) {
     return { error: error.message };
   }
-  return (data ?? []).map((row) => presentCalendarItem(row as Record<string, unknown>));
+  const rows = data ?? [];
+  const results = await resultsByCalendarId(
+    client,
+    rows.map((row) => String(row.id)),
+  );
+  return rows.map((row) =>
+    presentCalendarItem(row as Record<string, unknown>, results.get(String(row.id)) ?? null),
+  );
 }
 
 export type ToolExecution = {
@@ -383,7 +462,7 @@ export async function executeTool(
     const { data, error } = await client
       .from("calendar_items")
       .select(
-        "id, date, sport, title, intent, importance, planned_seconds, planned_distance_m, planned_load, purpose, notes, workout",
+        "id, date, sport, title, intent, importance, planned_seconds, planned_distance_m, planned_load, purpose, notes, workout, linked_activity_id",
       )
       .gte("date", str(args.start))
       .lte("date", str(args.end))
@@ -391,8 +470,18 @@ export async function executeTool(
     if (error) {
       return { result: { error: error.message } };
     }
+    const rows = data ?? [];
+    const results = await resultsByCalendarId(
+      client,
+      rows.filter((row) => row.intent === "race").map((row) => String(row.id)),
+    );
     return {
-      result: (data ?? []).map((row) => presentCalendarItem(row as Record<string, unknown>)),
+      result: rows.map((row) =>
+        presentCalendarItem(
+          row as Record<string, unknown>,
+          results.get(String(row.id)) ?? null,
+        ),
+      ),
     };
   }
 

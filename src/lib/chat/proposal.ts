@@ -163,5 +163,11 @@ export function mutationLabel(mutation: DiaryMutation) {
   const when = mutation.planned_seconds
     ? ` · ${Math.round(mutation.planned_seconds / 60)}m`
     : "";
-  return `${mutation.date} · ${mutation.intent === "race" ? "Race" : mutation.sport} · ${mutation.title}${when}`;
+  const kind =
+    mutation.intent === "race"
+      ? "Race"
+      : mutation.intent === "rest"
+        ? "Rest"
+        : mutation.sport;
+  return `${mutation.date} · ${kind} · ${mutation.title}${when}`;
 }

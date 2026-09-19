@@ -18,6 +18,8 @@ import {
   isDirectionCalibration,
 } from "@/lib/load/direction";
 import { inferPerformance, type PerformanceReading } from "@/lib/load/performance";
+import { loadRaceResultsForAthlete } from "@/lib/race-result/store";
+import { formatRaceResult, type RaceResult } from "@/lib/race-result/types";
 import { historyDays } from "@/lib/load/training-state";
 import { DAYS, summarize, type OnboardingAnswers } from "@/lib/onboarding";
 import { createClient as createBrowserClient } from "@/lib/supabase/client";
@@ -51,6 +53,7 @@ export type ReviewPacket = {
   fixtures: ReviewSession[];
   upcomingPlanned: ReviewSession[];
   seasonRaces: ReviewSession[];
+  raceResults: (RaceResult & { date: string | null; title: string | null })[];
   goals: ReturnType<typeof summarize> | null;
   routeEvidence: "limited" | "emerging" | "clear";
 };
@@ -107,7 +110,13 @@ export async function loadReviewPacket(input: {
   const lookback = addDaysToKey(input.periodStart, -56);
   const loadFrom = addDaysToKey(input.periodStart, -120);
 
-  const [{ data: profile }, { data: loadData }, { data: calendarData }, { data: activityData }] =
+  const [
+    { data: profile },
+    { data: loadData },
+    { data: calendarData },
+    { data: activityData },
+    raceResults,
+  ] =
     await Promise.all([
       supabase
         .from("profiles")
@@ -139,6 +148,7 @@ export async function loadReviewPacket(input: {
         .eq("status", "ready")
         .gte("started_at", `${lookback}T00:00:00.000Z`)
         .lt("started_at", `${addDaysToKey(nextEnd, 1)}T00:00:00.000Z`),
+    loadRaceResultsForAthlete(input.athleteId, lookback, input.periodEnd),
     ]);
 
   const calibration = isDirectionCalibration(profile?.potential_calibration)
@@ -161,16 +171,18 @@ export async function loadReviewPacket(input: {
       .filter((event) => event.intent === "race" && event.linked_activity_id)
       .map((event) => event.linked_activity_id as string),
   );
-  const fromCalendar = events.map((event) =>
-    classifySession({
-      date: event.date,
-      title: event.title,
-      minutes: minutesFromSeconds(event.planned_seconds),
-      intent: event.intent,
-      importance: event.importance,
-      source: "calendar",
-    }),
-  );
+  const fromCalendar = events
+    .filter((event) => event.intent !== "rest")
+    .map((event) =>
+      classifySession({
+        date: event.date,
+        title: event.title,
+        minutes: minutesFromSeconds(event.planned_seconds),
+        intent: event.intent,
+        importance: event.importance,
+        source: "calendar",
+      }),
+    );
 
   type ActivityRow = {
     id: string;
@@ -251,6 +263,7 @@ export async function loadReviewPacket(input: {
     ]),
     upcomingPlanned: upcoming.filter((row) => row.kind !== "race"),
     seasonRaces: uniqueRaces(season),
+    raceResults,
     goals: onboarding?.values ? summarize(onboarding) : null,
     routeEvidence:
       route.status === "improving" || route.status === "declining"

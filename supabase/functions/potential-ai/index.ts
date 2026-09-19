@@ -24,7 +24,7 @@ import {
   userInputMessage,
 } from "../_shared/prompt.ts";
 import { athleteGoals } from "../_shared/goals.ts";
-import { executeTool } from "../_shared/tools.ts";
+import { executeTool, recentRaceResults } from "../_shared/tools.ts";
 
 const HISTORY_CAP = 12;
 const TOOL_ROUNDS = 6;
@@ -237,7 +237,7 @@ Deno.serve(async (req) => {
     day: "2-digit",
   }).format(new Date());
 
-  const [{ data: memories }, { data: directionRows }] = await Promise.all([
+  const [{ data: memories }, { data: directionRows }, raceResults] = await Promise.all([
     client.rpc("search_athlete_memory", {
       p_query: message,
       p_limit: 4,
@@ -250,6 +250,7 @@ Deno.serve(async (req) => {
       .lte("date", today)
       .order("date", { ascending: false })
       .limit(DIRECTION_HISTORY_DAYS),
+    recentRaceResults(client),
   ]);
   const attempts = await fetchRouteAttempts(client, today);
   const direction = inferDirection(
@@ -288,6 +289,7 @@ Deno.serve(async (req) => {
     },
     uiContext: body?.uiContext ?? null,
     relevantMemories: slimMemories(memories),
+    recentRaceResults: raceResults,
   };
   const userTurn = turnContextText(turnContext, message);
   const escalate = shouldEscalateToTerra(message, body?.uiContext?.intent);

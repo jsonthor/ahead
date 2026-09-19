@@ -123,6 +123,22 @@ type DailyRecoveryRow = {
   updated_at: string;
 };
 
+type RaceResultRow = {
+  id: string;
+  athlete_id: string;
+  calendar_item_id: string | null;
+  activity_id: string | null;
+  place: number | null;
+  field_size: number | null;
+  category: string | null;
+  gap: string | null;
+  feel: string | null;
+  factor: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+};
+
 type CalendarItemRow = {
   id: string;
   athlete_id: string;
@@ -834,6 +850,41 @@ export type Database = {
         };
         Update: Partial<ActivityInsightRow>;
         Relationships: [];
+      };
+      race_results: {
+        Row: RaceResultRow;
+        Insert: {
+          id?: string;
+          athlete_id: string;
+          calendar_item_id?: string | null;
+          activity_id?: string | null;
+          place?: number | null;
+          field_size?: number | null;
+          category?: string | null;
+          gap?: string | null;
+          feel?: string | null;
+          factor?: string | null;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<RaceResultRow>;
+        Relationships: [
+          {
+            foreignKeyName: "race_results_calendar_item_id_fkey";
+            columns: ["calendar_item_id"];
+            isOneToOne: true;
+            referencedRelation: "calendar_items";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "race_results_activity_id_fkey";
+            columns: ["activity_id"];
+            isOneToOne: true;
+            referencedRelation: "activities";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       coach_reviews: {
         Row: CoachReviewRow;

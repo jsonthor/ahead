@@ -6,6 +6,7 @@ import {
   parseCompareIds,
   stripCompareParam,
 } from "@/lib/activity-compare";
+import { keepAskAhead } from "@/lib/chat/ask-layer";
 import * as Dialog from "@radix-ui/react-dialog";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
@@ -47,7 +48,12 @@ export function CompareModal() {
     >
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70" />
-        <Dialog.Content className="fixed inset-3 z-50 flex max-h-[calc(100dvh-1.5rem)] w-auto flex-col overflow-hidden border border-line bg-paper-raised outline-none sm:inset-y-8 sm:inset-x-auto sm:left-1/2 sm:w-[min(68rem,calc(100vw-2rem))] sm:-translate-x-1/2">
+        <Dialog.Content
+          className="fixed inset-3 z-50 flex max-h-[calc(100dvh-1.5rem)] w-auto flex-col overflow-hidden border border-line bg-paper-raised outline-none sm:inset-y-8 sm:inset-x-auto sm:left-1/2 sm:w-[min(68rem,calc(100vw-2rem))] sm:-translate-x-1/2"
+          onPointerDownOutside={keepAskAhead}
+          onFocusOutside={keepAskAhead}
+          onInteractOutside={keepAskAhead}
+        >
           <div className="flex items-center justify-end border-b border-line px-4 py-2">
             <Dialog.Close asChild>
               <button

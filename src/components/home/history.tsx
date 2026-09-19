@@ -10,44 +10,58 @@ const questions = [
 export function HomeHistory() {
   return (
     <section id="history" className="scroll-mt-24">
-      <div className="grid lg:min-h-[880px] lg:grid-cols-[1.23fr_0.77fr]">
-        <div className="relative min-h-[32rem] overflow-hidden">
-          <HomePhoto
-            src="/home/loop.jpg"
-            alt="A road cyclist on a coastal road"
-            objectPosition="68% 40%"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-black/15" />
-          <div className="relative z-10 flex h-full min-h-[32rem] flex-col justify-between p-6 sm:p-10 lg:min-h-[880px] lg:p-14">
-            <p className="home-mono text-[10px] font-bold tracking-[0.16em] text-white/55 uppercase">
-              Today vs your usual
-            </p>
-            <dl className="self-end text-right">
-              <dd className="text-[clamp(3.6rem,7vw,7rem)] leading-none tracking-[-0.07em] text-white">
-                −1:18
-              </dd>
-              <p className="mt-2 text-[13px] text-white/55">faster</p>
-              <dd className="mt-8 text-[clamp(3.6rem,7vw,7rem)] leading-none tracking-[-0.07em] text-white">
-                −3 bpm
-              </dd>
-              <p className="mt-2 text-[13px] text-white/55">average HR</p>
-              <p className="mt-10 text-[13px] text-white/45">
-                Based on 14 comparable rides
-              </p>
-            </dl>
-          </div>
-        </div>
-        <div className="flex flex-col justify-center px-4 py-20 sm:px-8 lg:px-12">
-          <p className="home-kicker">Your own benchmark</p>
-          <h2 className="home-display mt-8 text-[clamp(3.2rem,6.8vw,7rem)] text-[var(--home-text)]">
-            Same effort.
-            <span className="block">Faster.</span>
+      <div className="px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
+        <div className="mx-auto max-w-[1470px]">
+          <p className="home-kicker">Performance evidence</p>
+          <h2 className="home-display mt-8 max-w-[16ch] text-[clamp(3.2rem,6.8vw,7rem)] text-[var(--home-text)]">
+            Performance, backed by evidence.
           </h2>
-          <p className="mt-9 max-w-md text-[18px] leading-[1.55] text-[var(--home-text-2)]">
-            Ahead recognises routes you ride regularly and compares today with
-            your own past efforts — so progress shows up even when there was no
-            test, race or FTP session.
+          <p className="mt-8 max-w-2xl text-[18px] leading-[1.55] text-[var(--home-text-2)]">
+            Race results are the strongest real-world signal. Repeated efforts
+            fill the gaps between them. Capacity models explain the physiology.
+            Training load is the input, not the proof.
           </p>
+
+          <div className="mt-16 grid gap-4 lg:grid-cols-2">
+            <article className="border border-[var(--home-border)] bg-[var(--home-surface)] p-6 sm:p-8">
+              <p className="home-mono text-[10px] font-bold tracking-[0.16em] text-white/45 uppercase">
+                Race result
+              </p>
+              <p className="mt-5 text-[15px] text-white/70">Eastern CX R3 · 27 Sep</p>
+              <p className="mt-3 text-[clamp(3.2rem,6vw,5.4rem)] leading-none tracking-[-0.07em] text-white">
+                4th / 38
+              </p>
+              <p className="mt-4 text-[15px] text-white/55">U12 · +0:17 · felt good</p>
+              <p className="mt-8 text-[16px] leading-6 text-white/70">
+                Best placing against this field this season. The file has the
+                ride. This is how it actually finished.
+              </p>
+            </article>
+
+            <article className="relative min-h-[22rem] overflow-hidden border border-[var(--home-border)]">
+              <HomePhoto
+                src="/home/loop.jpg"
+                alt="A road cyclist on a coastal road"
+                objectPosition="68% 40%"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-black/10" />
+              <div className="relative z-10 flex h-full min-h-[22rem] flex-col justify-between p-6 sm:p-8">
+                <p className="home-mono text-[10px] font-bold tracking-[0.16em] text-white/45 uppercase">
+                  Between races
+                </p>
+                <div>
+                  <p className="text-[clamp(3.2rem,6vw,5.4rem)] leading-none tracking-[-0.07em] text-white">
+                    −1:18
+                  </p>
+                  <p className="mt-2 text-[15px] text-white/55">faster · −3 bpm</p>
+                  <p className="mt-6 max-w-sm text-[16px] leading-6 text-white/70">
+                    Same loop, 14 times. Supporting evidence when there was no
+                    race, test or FTP session.
+                  </p>
+                </div>
+              </div>
+            </article>
+          </div>
         </div>
       </div>
 
@@ -105,9 +119,9 @@ export function HomeHistory() {
               Ahead
             </p>
             <p className="mt-3 text-[18px] leading-[1.55] text-black/55">
-              The second block had less volume but substantially more specific
-              work. Performance stayed high while strain increased around the
-              race sequence.
+              Capacity rose across the block, and the last two races provide
+              supporting performance evidence: 4th and 2nd, both improvements
+              against comparable fields.
             </p>
           </div>
         </div>

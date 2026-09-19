@@ -33,7 +33,7 @@ export async function buildContextPacket(
   const activityFrom = `${addDaysToKey(recentFrom, -1)}T00:00:00.000Z`;
   const activityTo = `${addDaysToKey(to, 2)}T00:00:00.000Z`;
 
-  const [profileRes, loadsRes, eventsRes, activitiesRes, memoriesRes] =
+  const [profileRes, loadsRes, eventsRes, activitiesRes, memoriesRes, raceRes] =
     await Promise.all([
     client
       .from("profiles")
@@ -70,6 +70,13 @@ export async function buildContextPacket(
       .is("superseded_at", null)
       .order("importance", { ascending: false })
       .limit(12),
+    client
+      .from("race_results")
+      .select(
+        "place, field_size, category, gap, feel, factor, status, activity_id, calendar_item_id, calendar_items(date, title)",
+      )
+      .order("created_at", { ascending: false })
+      .limit(8),
   ]);
 
   const profile = profileRes.data;
@@ -170,10 +177,31 @@ export async function buildContextPacket(
         sport: event.sport,
         title: event.title,
         intent: event.intent,
+        notes: event.notes,
         planned_seconds: event.planned_seconds,
         linked_activity_id: event.linked_activity_id,
       })),
       activities,
+      raceResults: (raceRes.data ?? []).map((row) => {
+        const event = row.calendar_items as
+          | { date?: string; title?: string }
+          | { date?: string; title?: string }[]
+          | null;
+        const item = Array.isArray(event) ? event[0] : event;
+        return {
+          date: item?.date ?? null,
+          title: item?.title ?? null,
+          activityId: row.activity_id,
+          calendarItemId: row.calendar_item_id,
+          place: row.place,
+          fieldSize: row.field_size,
+          category: row.category,
+          gap: row.gap,
+          feel: row.feel,
+          factor: row.factor,
+          status: row.status,
+        };
+      }),}
     },
   };
 }

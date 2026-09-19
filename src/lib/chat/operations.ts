@@ -42,6 +42,11 @@ export function operationLabel(op: CalendarOperation) {
     return `${op.date ?? ""} · Race · ${op.title ?? "Race"}`;
   }
   const when = op.session?.durationMinutes ? ` · ${op.session.durationMinutes}m` : "";
-  const kind = op.session?.intent === "race" ? "Race" : op.session?.sport ?? "session";
+  const kind =
+    op.session?.intent === "race"
+      ? "Race"
+      : op.session?.intent === "rest"
+        ? "Rest"
+        : op.session?.sport ?? "session";
   return `${op.date ?? ""} · ${kind} · ${op.session?.title ?? "Training"}${when}`;
 }

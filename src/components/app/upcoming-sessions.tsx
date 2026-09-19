@@ -30,6 +30,9 @@ function kindLabel(event: CalendarEvent) {
   if (event.intent === "race") {
     return event.importance ? `${event.importance} race` : "Race";
   }
+  if (event.intent === "rest") {
+    return "Rest";
+  }
   return workoutSportLabel(event.sport);
 }
 
@@ -97,6 +100,7 @@ export function UpcomingSessions() {
               formatDuration(event.planned_seconds) ??
               formatDistance(event.planned_distance_m, user.units);
             const race = event.intent === "race";
+            const rest = event.intent === "rest";
             return (
               <li key={event.id}>
                 <Link
@@ -112,7 +116,7 @@ export function UpcomingSessions() {
                   <span className="min-w-0 flex-1">
                     <span
                       className={`block text-[12px] tracking-wide uppercase ${
-                        race ? "text-ember" : "text-muted"
+                        race ? "text-ember" : rest ? "text-rest" : "text-muted"
                       }`}
                     >
                       {kindLabel(event)}

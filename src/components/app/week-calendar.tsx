@@ -1,13 +1,13 @@
 "use client";
 
 import { useAppUser } from "@/components/app/app-shell";
+import { DayAdd } from "@/components/app/date-action-panel";
 import { EventDialog } from "@/components/app/event-dialog";
 import {
   addDaysToKey,
   addMonthsToDayKey,
   dateKeyInZone,
   formatDayNumber,
-  formatDayTitle,
   formatMonthTitle,
   formatTimeInZone,
   formatWeekRange,
@@ -23,9 +23,11 @@ import {
   CALENDAR_CHANGED_EVENT,
   CALENDAR_EVENT_COLUMNS,
   CALENDAR_PREVIEW_EVENT,
+  createRestDay,
   moveCalendarEvent,
   parseCalendarEvent,
   type CalendarEvent,
+  type CalendarIntent,
   type CalendarPreview,
 } from "@/lib/calendar-event";
 import { durationLabel, proposedChanges } from "@/lib/chat/proposal-view";
@@ -118,9 +120,11 @@ export function WeekCalendar() {
   const [showWellness, setShowWellness] = useState(true);
   const [refresh, setRefresh] = useState(0);
   const [preview, setPreview] = useState<CalendarPreview>(null);
-  const [draft, setDraft] = useState<{ date: string; event: CalendarEvent | null } | null>(
-    null,
-  );
+  const [draft, setDraft] = useState<{
+    date: string;
+    event: CalendarEvent | null;
+    intent?: CalendarIntent;
+  } | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropKey, setDropKey] = useState<string | null>(null);
   const [comparing, setComparing] = useState(false);
@@ -217,6 +221,38 @@ export function WeekCalendar() {
         setRecovery((data as RecoveryObservation[] | null) ?? []);
       });
   }, [keys, month, range.from, range.to, rangeKey, refresh]);
+
+  function shiftPeriod(direction: -1 | 1) {
+    setFocus((value) =>
+      view === "week"
+        ? addDaysToKey(mondayOfKey(value), 7 * direction)
+        : addMonthsToDayKey(value, direction),
+    );
+  }
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+      }
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+        return;
+      }
+      const node = event.target;
+      if (
+        node instanceof HTMLElement &&
+        node.closest(
+          "input, textarea, select, [contenteditable='true'], [role='dialog'], [role='menu'], [role='listbox']",
+        )
+      ) {
+        return;
+      }
+      event.preventDefault();
+      shiftPeriod(event.key === "ArrowLeft" ? -1 : 1);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [view]);
 
   useEffect(() => {
     function onChange() {
@@ -370,23 +406,17 @@ export function WeekCalendar() {
           <div className="flex overflow-hidden rounded-sm border border-line">
             <button
               type="button"
-              onClick={() =>
-                setFocus((value) =>
-                  view === "week" ? addDaysToKey(mondayOfKey(value), -7) : addMonthsToDayKey(value, -1),
-                )
-              }
+              onClick={() => shiftPeriod(-1)}
               className={`${navButtonClass()} border-r border-line`}
+              aria-keyshortcuts="ArrowLeft"
             >
               Previous
             </button>
             <button
               type="button"
-              onClick={() =>
-                setFocus((value) =>
-                  view === "week" ? addDaysToKey(mondayOfKey(value), 7) : addMonthsToDayKey(value, 1),
-                )
-              }
+              onClick={() => shiftPeriod(1)}
               className={navButtonClass()}
+              aria-keyshortcuts="ArrowRight"
             >
               Next
             </button>
@@ -468,7 +498,25 @@ export function WeekCalendar() {
                     units={user.units}
                     recovery={recovery}
                     showWellness={showWellness}
-                    onAdd={(date) => setDraft({ date, event: null })}
+                    onAdd={(date, intent) => {
+                      if (intent === "rest") {
+                        if (
+                          events?.some(
+                            (event) =>
+                              event.date === date && event.intent === "rest",
+                          )
+                        ) {
+                          return;
+                        }
+                        void createRestDay(createClient(), user.id, date).catch(
+                          (error) => {
+                            console.error("Add rest failed", error);
+                          },
+                        );
+                        return;
+                      }
+                      setDraft({ date, event: null, intent });
+                    }}
                     onEdit={(event) => setDraft({ date: event.date, event })}
                     comparing={comparing}
                     selected={selected}
@@ -703,7 +751,7 @@ function MonthDay({
   onToggleSelect: (id: string) => void;
   draggingId: string | null;
   dropKey: string | null;
-  onAdd: (date: string) => void;
+  onAdd: (date: string, intent: CalendarIntent) => void;
   onEdit: (event: CalendarEvent) => void;
   onDragSession: (id: string | null) => void;
 }) {
@@ -719,7 +767,7 @@ function MonthDay({
   return (
     <div
       data-calendar-day={day.key}
-      className={`relative h-full min-w-0 overflow-hidden transition-colors duration-150 ${
+      className={`group/day relative h-full min-w-0 overflow-hidden transition-colors duration-150 ${
         compact
           ? showWellness
             ? "min-h-48"
@@ -737,14 +785,6 @@ function MonthDay({
               : "bg-paper"
       }`}
     >
-      {comparing ? null : (
-        <button
-          type="button"
-          className="absolute inset-0 z-0 cursor-pointer hover:bg-paper-sunken"
-          aria-label={`Add event on ${formatDayTitle(day.key)}`}
-          onClick={() => onAdd(day.key)}
-        />
-      )}
       <div className="relative z-10 flex h-full min-w-0 flex-col p-2 pointer-events-none">
         <div className="flex justify-end">
           <span
@@ -807,6 +847,12 @@ function MonthDay({
           {extra > 0 ? (
             <li className="px-1.5 text-[11px] text-muted">+{extra} more</li>
           ) : null}
+          {comparing || draggingId ? null : (
+            <DayAdd
+              date={day.key}
+              onChoose={(intent) => onAdd(day.key, intent)}
+            />
+          )}
         </ul>
         {showWellness ? <DayWellness date={day.key} rows={recovery} /> : null}
       </div>
@@ -915,6 +961,8 @@ function PlannedChip({
 }) {
   const dragged = useRef(false);
   const race = event.intent === "race";
+  const rest = event.intent === "rest";
+  const logged = !movable && (race || rest);
   const stats = joinStats([
     formatDuration(event.planned_seconds),
     formatDistance(event.planned_distance_m, units),
@@ -945,20 +993,30 @@ function PlannedChip({
           onEdit(event);
         }
       }}
-      className={`block w-full min-w-0 max-w-full overflow-hidden rounded-sm border border-dashed px-2 py-1.5 text-left ${
-        movable ? "cursor-grab active:cursor-grabbing" : ""
+      className={`block w-full min-w-0 max-w-full overflow-hidden rounded-sm border px-2 py-1.5 text-left ${
+        movable ? "cursor-grab active:cursor-grabbing border-dashed" : ""
       } ${
         removing || dragging
           ? "border-line bg-paper opacity-50"
-          : "border-forest bg-paper hover:border-forest-hover hover:bg-paper-sunken"
+          : logged
+            ? "border-line bg-paper hover:border-ink/25 hover:bg-paper-sunken"
+            : rest
+              ? "border-dashed border-line bg-paper hover:bg-paper-sunken"
+              : "border-dashed border-forest bg-paper hover:border-forest-hover hover:bg-paper-sunken"
       }`}
     >
       <p
         className={`mono text-[9px] font-bold tracking-[0.14em] uppercase ${
-          race ? "text-ember" : sportTone[event.sport] ?? "text-rest"
+          race ? "text-ember" : rest ? "text-rest" : sportTone[event.sport] ?? "text-rest"
         }`}
       >
-        {race ? (event.importance ? `${event.importance} race` : "Race") : workoutSportLabel(event.sport)}
+        {rest
+          ? "Rest"
+          : race
+            ? event.importance
+              ? `${event.importance} race`
+              : "Race"
+            : workoutSportLabel(event.sport)}
       </p>
       <p className={`truncate text-[12px] text-ink ${removing ? "line-through" : ""}`}>
         {event.title}

@@ -38,6 +38,15 @@ function packetBrief(packet: ReviewPacket, draft: ReturnType<typeof composeCoach
     performanceScore: packet.performanceEnd.score,
     racesInBlock: packet.races.map(sessionBrief),
     raceCount: packet.races.length,
+    raceResults: packet.raceResults.map((row) => ({
+      date: row.date,
+      title: row.title,
+      place: row.place,
+      fieldSize: row.fieldSize,
+      gap: row.gap,
+      factor: row.factor,
+      status: row.status,
+    })),
     upcomingRaces: packet.upcomingRaces.map(sessionBrief),
     immediateRaces: packet.upcomingRaces
       .filter((race) => daysSince(packet.periodEnd, race.date) <= 2)

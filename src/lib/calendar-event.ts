@@ -13,7 +13,7 @@ export const CALENDAR_SPORTS: WorkoutSport[] = WORKOUT_SPORTS.map(
   (sport) => sport.id,
 );
 
-export type CalendarIntent = "training" | "race";
+export type CalendarIntent = "training" | "race" | "rest";
 export type CalendarImportance = "A" | "B" | "C";
 
 export type CalendarEvent = {
@@ -79,7 +79,10 @@ export function notifyCalendarPreview(preview: CalendarPreview) {
 type CalendarClient = SupabaseClient<Database>;
 
 export function asCalendarIntent(value: string | null | undefined): CalendarIntent {
-  return value === "race" ? "race" : "training";
+  if (value === "race" || value === "rest") {
+    return value;
+  }
+  return "training";
 }
 
 export function asCalendarImportance(
@@ -134,6 +137,9 @@ export function defaultEventTitle(intent: CalendarIntent, sport: WorkoutSport) {
   if (intent === "race") {
     return "Race";
   }
+  if (intent === "rest") {
+    return "Rest";
+  }
   return workoutSportLabel(sport);
 }
 
@@ -175,6 +181,24 @@ export function pickMatchingActivity(
   );
 }
 
+export async function createRestDay(
+  client: CalendarClient,
+  athleteId: string,
+  date: string,
+) {
+  const { error } = await client.from("calendar_items").insert({
+    athlete_id: athleteId,
+    date,
+    sport: "other",
+    title: "Rest",
+    intent: "rest",
+  });
+  if (error) {
+    throw error;
+  }
+  notifyCalendarChanged();
+}
+
 export async function moveCalendarEvent(
   client: CalendarClient,
   eventId: string,
@@ -186,6 +210,40 @@ export async function moveCalendarEvent(
     .eq("id", eventId);
   if (error) {
     throw error;
+  }
+  notifyCalendarChanged();
+}
+
+export async function unlinkActivityFromCalendar(
+  client: CalendarClient,
+  activityId: string,
+) {
+  const { data, error } = await client
+    .from("calendar_items")
+    .select("id")
+    .eq("linked_activity_id", activityId)
+    .maybeSingle();
+  if (error) {
+    throw error;
+  }
+  if (data?.id) {
+    await setEventActivityLink(client, data.id, null);
+  }
+  const { error: keepEventError } = await client
+    .from("race_results")
+    .update({ activity_id: null })
+    .eq("activity_id", activityId)
+    .not("calendar_item_id", "is", null);
+  if (keepEventError) {
+    throw keepEventError;
+  }
+  const { error: dropError } = await client
+    .from("race_results")
+    .delete()
+    .eq("activity_id", activityId)
+    .is("calendar_item_id", null);
+  if (dropError) {
+    throw dropError;
   }
   notifyCalendarChanged();
 }

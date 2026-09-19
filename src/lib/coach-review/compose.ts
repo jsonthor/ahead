@@ -16,6 +16,20 @@ function trend(start: number | null, end: number | null) {
   return delta > 0 ? "Rising" : "Falling";
 }
 
+function performanceEvidenceLabel(packet: ReviewPacket) {
+  const scored = packet.raceResults.filter((row) => row.place != null || row.status !== "completed");
+  if (scored.length >= 2) {
+    return "Present";
+  }
+  if (scored.length === 1) {
+    return "Emerging";
+  }
+  if (packet.routeEvidence !== "limited") {
+    return "Emerging";
+  }
+  return "Limited";
+}
+
 function named(list: ReviewSession[]) {
   return list.map((row) => row.title);
 }
@@ -243,8 +257,7 @@ export function composeCoachReview(input: {
     specificTrend,
     aerobicTrend,
     races: packet.races.length,
-    performanceEvidence:
-      packet.routeEvidence === "limited" ? "Limited" : "Emerging",
+    performanceEvidence: performanceEvidenceLabel(packet),
     objective:
       packet.races.length > 0
         ? `No formal block objective was written down. From the completed month, this period looks like race-specific work around ${raceNames.join(", ")}.`
@@ -253,10 +266,18 @@ export function composeCoachReview(input: {
     didItWork,
     worked: worked.slice(0, 2),
     didnt: didnt.slice(0, 3),
-    unknown:
+    unknown: [
+      packet.races.length > 0 &&
+      packet.raceResults.filter((row) => row.place != null || row.status !== "completed")
+        .length === 0
+        ? "Race results are missing, so treat this block as training evidence only."
+        : "",
       packet.routeEvidence === "limited"
         ? "Comparable efforts are still thin, so treat the capacity rise as a training effect, not a confirmed jump in speed."
         : "",
+    ]
+      .filter(Boolean)
+      .join(" "),
     lessons,
     immediatePriority: immediatePriority(packet),
     nextObjective: nextGoal(packet, specificTrend, aerobicTrend),
@@ -362,8 +383,7 @@ export function composeWeeklyReview(input: {
     specificTrend,
     aerobicTrend,
     races: packet.races.length,
-    performanceEvidence:
-      packet.routeEvidence === "limited" ? "Limited" : "Emerging",
+    performanceEvidence: performanceEvidenceLabel(packet),
     objective: "",
     happened,
     didItWork: "",

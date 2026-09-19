@@ -13,7 +13,7 @@ const items = [
   },
   {
     q: "What is Performance?",
-    a: "Performance is Ahead’s athlete-relative view of your current training state. It combines the capacity you have built with the strain you are currently carrying, then compares that state with your own history. The number shows where you are today. Building, Maintaining or Declining shows how that same state has been moving over the longer term.",
+    a: "Performance is Ahead’s athlete-relative view of your current training state. It combines the capacity you have built with the strain you are currently carrying, then compares that state with your own history. The number shows where you are today. Building, Maintaining or Declining shows how that same state has been moving over the longer term. Race results are the strongest real-world evidence that the work is translating. Repeated efforts and capacity models sit underneath.",
   },
   {
     q: "What is a Coach Review?",

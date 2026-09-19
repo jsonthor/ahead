@@ -36,7 +36,10 @@ import {
   type CoachReviewAskDetail,
 } from "@/lib/coach-review/ask";
 import { coachReviewById, hydrateCoachReviews } from "@/lib/coach-review/store";
+import { ASK_PANEL_ID } from "@/lib/chat/ask-layer";
 import { SESSION_ASK_EVENT } from "@/lib/session-note/ask";
+import { getOpenRaceResult } from "@/lib/race-result/store";
+import { raceResultContext } from "@/lib/race-result/types";
 import {
   getOpenSessionNote,
   sessionNoteContext,
@@ -44,6 +47,7 @@ import {
 import { ChatMarkdown } from "@/components/app/chat-markdown";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 
 type ChatMessage = {
   id: string;
@@ -238,6 +242,7 @@ export function AskPotential() {
     ]);
     try {
       const sessionNote = sessionNoteContext(getOpenSessionNote());
+      const raceResult = raceResultContext(getOpenRaceResult());
       const response = await invokePotentialAi({
         conversationId,
         message: content,
@@ -252,6 +257,7 @@ export function AskPotential() {
             : {}),
           coachReview: coachReviewContext(user.id),
           ...(sessionNote ? { sessionNote } : {}),
+          ...(raceResult ? { raceResult } : {}),
           ...(options?.intent ? { intent: options.intent } : {}),
         },
       });
@@ -427,16 +433,17 @@ export function AskPotential() {
         onClick={() => setOpen((value) => !value)}
         className="home-cta home-cta-sm gap-2"
         aria-expanded={open}
-        aria-controls="ask-potential"
+        aria-controls={ASK_PANEL_ID}
       >
         <ChatBubbleIcon />
         Ask Ahead
       </button>
-      {open ? (
-        <div
-          id="ask-potential"
-          className="fixed inset-x-3 top-[5.25rem] bottom-3 z-40 flex flex-col overflow-hidden rounded-2xl border border-line bg-paper-raised shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:inset-x-auto sm:right-4 sm:w-[28rem]"
-        >
+      {open
+        ? createPortal(
+            <div
+              id={ASK_PANEL_ID}
+              className="pointer-events-auto fixed inset-x-3 top-[5.25rem] bottom-3 z-[80] flex flex-col overflow-hidden rounded-2xl border border-line bg-paper-raised shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:inset-x-auto sm:right-4 sm:w-[28rem]"
+            >
           <div className="flex items-center gap-3 border-b border-line px-4 py-3">
             <span className="flex size-8 items-center justify-center rounded-full bg-[var(--home-cta)] text-[#04140a]">
               <ChatBubbleIcon />
@@ -477,17 +484,7 @@ export function AskPotential() {
                         </p>
                       )
                     ) : busy && message.role === "assistant" ? (
-                      <p
-                        className="max-w-[85%] rounded-2xl rounded-bl-md bg-paper-sunken px-3.5 py-2.5 text-sm text-muted"
-                        aria-live="polite"
-                      >
-                        Thinking
-                        <span className="ml-0.5 inline-flex w-[1.1em] justify-between tracking-normal" aria-hidden="true">
-                          <span className="potential-thinking-dot">.</span>
-                          <span className="potential-thinking-dot">.</span>
-                          <span className="potential-thinking-dot">.</span>
-                        </span>
-                      </p>
+                      <ThinkingBubble />
                     ) : null}
                     {message.proposal ? (
                       <ProposalCard
@@ -545,8 +542,10 @@ export function AskPotential() {
               </button>
             </div>
           </form>
-        </div>
-      ) : null}
+        </div>,
+          document.body,
+        )
+      : null}
     </>
   );
 }
@@ -649,6 +648,20 @@ function ProposalCard({
           Dismiss
         </button>
       </div>
+    </div>
+  );
+}
+
+function ThinkingBubble() {
+  return (
+    <div
+      className="inline-flex max-w-[85%] items-center gap-1.5 rounded-2xl rounded-bl-md bg-paper-sunken px-3.5 py-3"
+      aria-live="polite"
+      aria-label="Ahead is thinking"
+    >
+      <span className="home-type-dot bg-ink-soft" />
+      <span className="home-type-dot bg-ink-soft" />
+      <span className="home-type-dot bg-ink-soft" />
     </div>
   );
 }
