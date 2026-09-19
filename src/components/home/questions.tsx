@@ -8,10 +8,7 @@ const questions = [
 
 export function HomeQuestions() {
   return (
-    <section
-      id="product"
-      className="home-paper scroll-mt-24 px-4 py-24 sm:px-6 lg:px-8 lg:py-36"
-    >
+    <section className="home-paper scroll-mt-24 px-4 py-24 sm:px-6 lg:px-8 lg:py-36">
       <div className="mx-auto max-w-[1470px]">
         <p className="home-kicker">The question behind the numbers</p>
         <h2 className="home-display mt-8 max-w-[16ch] text-[clamp(3.2rem,7vw,7.4rem)]">

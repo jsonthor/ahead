@@ -5,65 +5,6 @@ import { useState } from "react";
 
 import { HomePhoto } from "@/components/home/photo";
 
-const days = [
-  {
-    name: "Mon",
-    date: "21",
-    title: "Easy aerobic",
-    meta: "50m",
-    load: "41",
-    kind: "done" as const,
-  },
-  {
-    name: "Tue",
-    date: "22",
-    title: "CX specific",
-    meta: "60m",
-    load: "72",
-    kind: "proposed" as const,
-  },
-  {
-    name: "Wed",
-    date: "23",
-    title: "Club session",
-    meta: "55m",
-    load: "86",
-    kind: "done" as const,
-  },
-  {
-    name: "Thu",
-    date: "24",
-    title: "Easy endurance",
-    meta: "75m",
-    load: "54",
-    kind: "proposed" as const,
-  },
-  {
-    name: "Fri",
-    date: "25",
-    title: "Rest",
-    meta: "—",
-    load: "—",
-    kind: "rest" as const,
-  },
-  {
-    name: "Sat",
-    date: "26",
-    title: "Race openers",
-    meta: "35m",
-    load: "31",
-    kind: "proposed" as const,
-  },
-  {
-    name: "Sun",
-    date: "27",
-    title: "CX race",
-    meta: "50m",
-    load: "90",
-    kind: "race" as const,
-  },
-];
-
 const changes = [
   { day: "Thu", change: "Intervals removed" },
   { day: "Thu", change: "Recovery · 40m" },
@@ -84,7 +25,7 @@ export function HomeApplyDemo() {
         <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent" />
       </div>
       <div className="px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
-      <div className="mx-auto max-w-[1470px]">
+        <div className="mx-auto max-w-[1470px]">
         <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-end lg:gap-20">
           <div>
             <p className="home-kicker">One system, not another dashboard</p>
@@ -100,79 +41,7 @@ export function HomeApplyDemo() {
         </div>
 
         <div className="mt-20 border-y border-[var(--home-border)] bg-[#0c0c0c]">
-          <div className="flex flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-            <p className="home-mono text-[10px] tracking-[0.14em] text-[var(--home-text-3)] uppercase">
-              21–27 Sep
-            </p>
-            <dl className="flex flex-wrap gap-x-7 gap-y-2">
-              {[
-                ["49", "readiness"],
-                ["42.9", "fitness"],
-                ["46.7", "fatigue"],
-                ["−3.8", "form"],
-              ].map(([value, label]) => (
-                <div key={label} className="flex items-baseline gap-2">
-                  <dt className="sr-only">{label}</dt>
-                  <dd className="text-[16px] tracking-tight text-[var(--home-text)]">
-                    {value}
-                  </dd>
-                  <span className="home-mono text-[10px] tracking-[0.12em] text-[var(--home-text-3)] uppercase">
-                    {label}
-                  </span>
-                </div>
-              ))}
-            </dl>
-          </div>
-
-          <div className="overflow-x-auto">
-            <div className="grid min-w-[64rem] grid-cols-7 border-t border-[var(--home-border)]">
-              {days.map((day) => (
-                <article
-                  key={day.date}
-                  className="min-h-[18rem] border-r border-[var(--home-border)] last:border-r-0"
-                >
-                  <header className="flex items-start justify-between border-b border-[var(--home-border)] px-4 py-4">
-                    <span className="home-mono text-[9px] tracking-[0.14em] text-[var(--home-text-3)] uppercase">
-                      {day.name}
-                    </span>
-                    <span className="text-[1.4rem] tracking-[-0.04em] text-[var(--home-text)]">
-                      {day.date}
-                    </span>
-                  </header>
-                  <div
-                    className={`mx-2.5 mt-3 flex min-h-[9rem] flex-col px-3 py-3 ${
-                      day.kind === "proposed"
-                        ? "bg-[var(--home-accent-dim)]"
-                        : day.kind === "race"
-                          ? "bg-[rgba(212,165,116,0.08)]"
-                          : day.kind === "rest"
-                            ? "opacity-40"
-                            : "bg-white/[0.025]"
-                    }`}
-                  >
-                    <p className="home-mono min-h-4 text-[8px] tracking-[0.14em] text-[var(--home-accent)] uppercase">
-                      {day.kind === "proposed"
-                        ? "Proposed"
-                        : day.kind === "race"
-                          ? "Race"
-                          : ""}
-                    </p>
-                    <p className="mt-2 text-[14px] leading-snug font-medium text-[var(--home-text)]">
-                      {day.title}
-                    </p>
-                    <p className="mt-1 text-[10px] text-[var(--home-text-3)]">
-                      {day.meta}
-                    </p>
-                    <p className="home-mono mt-auto pt-6 text-[9px] tracking-[0.12em] text-[var(--home-text-3)] uppercase">
-                      Load {day.load}
-                    </p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid border-t border-[var(--home-border)] lg:grid-cols-[0.72fr_1.28fr]">
+          <div className="grid lg:grid-cols-[0.72fr_1.28fr]">
             <div className="border-b border-[var(--home-border)] px-5 py-8 sm:px-6 lg:border-r lg:border-b-0">
               <p className="home-kicker">You</p>
               <p className="mt-10 max-w-sm text-[clamp(1.6rem,2.4vw,2.4rem)] leading-[1.08] tracking-[-0.04em] text-[var(--home-text)]">
@@ -192,7 +61,7 @@ export function HomeApplyDemo() {
                     key={`${row.day}-${row.change}`}
                     className="grid grid-cols-[4rem_1fr] items-center border-b border-[var(--home-border)] py-3.5 text-[13px]"
                   >
-                    <span className="home-mono text-[9px] tracking-[0.14em] text-[var(--home-accent)] uppercase">
+                    <span className="home-mono text-[9px] tracking-[0.14em] text-[var(--home-cta)] uppercase">
                       {row.day}
                     </span>
                     <span className="text-[var(--home-text)]">
@@ -265,7 +134,7 @@ export function HomeApplyDemo() {
             </div>
           </div>
         </div>
-      </div>
+        </div>
       </div>
     </section>
   );

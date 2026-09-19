@@ -13,6 +13,7 @@ import { HomeMetrics } from "@/components/home/metrics";
 import { HomeProviders } from "@/components/home/providers";
 import { HomeQuestions } from "@/components/home/questions";
 import { HomeReveal } from "@/components/home/reveal";
+import { HomeTalk } from "@/components/home/talk";
 import { HomeTrust } from "@/components/home/trust";
 
 export default function Home() {
@@ -29,6 +30,7 @@ export default function Home() {
 
         <main id="main">
           <HomeHero />
+          <HomeTalk />
           <HomeQuestions />
           <HomeApplyDemo />
           <HomeHistory />
