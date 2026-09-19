@@ -1,7 +1,11 @@
 "use client";
 
 import { notifyCalendarChanged } from "@/lib/calendar-event";
-import { COROS_SYNC_STALE_MS, readImportProgress } from "@/lib/coros/progress";
+import {
+  COROS_SYNC_STALE_MS,
+  readImportProgress,
+  type ImportProgress,
+} from "@/lib/coros/progress";
 import {
   isConnected,
   loadIntegrations,
@@ -18,8 +22,32 @@ const itemClassName =
 type SyncState = {
   provider: string;
   status: "running" | "done" | "error";
+  phase?: ImportProgress["phase"];
   message: string;
 };
+
+function headerStatus(sync: SyncState) {
+  if (sync.status === "error") {
+    return sync.message;
+  }
+  if (sync.status === "done") {
+    return sync.message;
+  }
+  switch (sync.phase) {
+    case "listing":
+      return "Checking COROS";
+    case "activities":
+      return "Getting activities";
+    case "fit":
+      return "Saving sessions";
+    case "wellness":
+      return "Getting recovery";
+    case "load":
+      return "Updating load";
+    default:
+      return "Connecting";
+  }
+}
 
 let autoSyncStarted = false;
 
@@ -103,6 +131,7 @@ export function SyncMenu() {
         setSync({
           provider: provider.id,
           status: "running",
+          phase: next.phase,
           message: next.message,
         });
       });
@@ -144,12 +173,12 @@ export function SyncMenu() {
     <div className="flex items-center gap-2">
       {sync ? (
         <p
-          className={`hidden max-w-[12rem] truncate text-[12px] sm:block ${
-            sync.status === "error" ? "text-danger" : "text-muted"
+          className={`hidden whitespace-nowrap text-sm sm:block ${
+            sync.status === "error" ? "text-danger" : "text-ink"
           }`}
           role="status"
         >
-          {sync.message}
+          {headerStatus(sync)}
         </p>
       ) : null}
       <DropdownMenu.Root>
