@@ -5,27 +5,35 @@ import * as Accordion from "@radix-ui/react-accordion";
 const items = [
   {
     q: "Is Ahead a replacement for a coach?",
-    a: "Ahead is designed primarily for self-coached athletes. It can analyse training, explain patterns and help plan what comes next, but it doesn’t pretend to replace everything a good human coach brings.",
+    a: "Ahead is built primarily for athletes who coach themselves. It can interpret training, help with day-to-day decisions, review completed blocks and plan what comes next. You remain in control of the training and every proposed change.",
   },
   {
     q: "Does Ahead create my whole training plan?",
-    a: "It can, but it doesn’t have to. Ahead can work with an existing routine, club sessions, races, coach-prescribed workouts or whatever training you already do.",
+    a: "It can, but it does not require you to start from a blank calendar. Ahead works around club sessions, races, existing plans and the training you already do.",
   },
   {
     q: "What is Performance?",
-    a: "Performance is Ahead's one headline. The number is how much of your built capacity is expressible today, relative to your own history. Building, Maintaining, or Declining is the slower trend of that same number — not a second verdict.",
+    a: "Performance is Ahead’s athlete-relative view of your current training state. It combines the capacity you have built with the strain you are currently carrying, then compares that state with your own history. The number shows where you are today. Building, Maintaining or Declining shows how that same state has been moving over the longer term.",
   },
   {
-    q: "Can Ahead change my calendar?",
-    a: "It can prepare changes. You see exactly what will move, be removed or be added before anything is applied.",
+    q: "What is a Coach Review?",
+    a: "A periodic look back at the block you just completed. Ahead considers what happened, what appears to have worked, what is still uncertain and what the next block should be trying to achieve.",
+  },
+  {
+    q: "What happens after a workout?",
+    a: "Ahead can compare the completed activity with what was planned, put it into the context of your recent training and explain whether anything should change next.",
+  },
+  {
+    q: "Can Ahead change my training automatically?",
+    a: "No. Ahead can propose changes. You approve them before they are applied.",
   },
   {
     q: "Which devices work?",
-    a: "COROS and FIT activity imports are supported first, with more integrations being added.",
+    a: "COROS and FIT uploads are supported first. Garmin, Polar and Wahoo are planned.",
   },
   {
     q: "Is Ahead medical advice?",
-    a: "No. Ahead uses training and recovery trends to help you understand your training. It does not diagnose illness, injury or medical conditions.",
+    a: "No. Ahead is a training tool, not a medical device. It does not diagnose medical conditions.",
   },
 ];
 

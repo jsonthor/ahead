@@ -22,8 +22,9 @@ export function HomeIngest() {
             </h2>
           </div>
           <p className="max-w-md text-[18px] leading-[1.56] text-black/55">
-            Club nights. Races. Coach-prescribed sessions. The 45 minutes you
-            squeezed in because that was all you had. Ahead works around that.
+            Club nights. Races. Coach-prescribed sessions. Easy rides. The 45
+            minutes you squeezed in because that was all you had. Ahead works
+            around the training you already do.
           </p>
         </div>
 

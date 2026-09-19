@@ -1,8 +1,24 @@
 const control = [
-  "Calendar changes are shown before they are applied.",
-  "Missing activity data stays missing. It is not invented as rest.",
-  "Metrics expose their assumptions and limitations.",
-  "Ahead is a training tool, not a medical device.",
+  {
+    title: "You approve training changes.",
+    body: "Ahead can propose changes, but nothing is silently rewritten.",
+  },
+  {
+    title: "Missing stays missing.",
+    body: "No recorded activity is not automatically treated as rest.",
+  },
+  {
+    title: "The numbers have provenance.",
+    body: "Metrics expose the models, assumptions and confidence behind them.",
+  },
+  {
+    title: "AI interprets. Ahead calculates.",
+    body: "Canonical training metrics come from Ahead’s models, not from the language model guessing them.",
+  },
+  {
+    title: "Ahead is not a medical device.",
+    body: "It helps interpret training and recovery data. It does not diagnose health conditions.",
+  },
 ];
 
 export function HomeTrust() {
@@ -16,15 +32,22 @@ export function HomeTrust() {
             <span className="block">You decide.</span>
           </h2>
           <ol className="border-t border-[var(--home-border)]">
-            {control.map((line, index) => (
+            {control.map((item, index) => (
               <li
-                key={line}
-                className="grid grid-cols-[3.25rem_1fr] items-start border-b border-[var(--home-border)] py-5 text-[14px] leading-6 text-[var(--home-text-2)]"
+                key={item.title}
+                className="grid grid-cols-[3.25rem_1fr] items-start border-b border-[var(--home-border)] py-5"
               >
                 <span className="home-mono text-[9px] tracking-[0.12em] text-[var(--home-text-3)]">
                   {String(index + 1).padStart(2, "0")}
                 </span>
-                <span>{line}</span>
+                <span>
+                  <p className="text-[15px] font-medium text-[var(--home-text)]">
+                    {item.title}
+                  </p>
+                  <p className="mt-1 text-[14px] leading-6 text-[var(--home-text-2)]">
+                    {item.body}
+                  </p>
+                </span>
               </li>
             ))}
           </ol>

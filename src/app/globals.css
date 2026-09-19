@@ -417,6 +417,208 @@ body {
   animation-delay: 1.15s;
 }
 
+@keyframes home-score-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.home-score-in {
+  animation: home-score-in 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.home-score-in-1 {
+  animation-delay: 0.18s;
+}
+
+.home-score-in-2 {
+  animation-delay: 0.34s;
+}
+
+.home-score-in-3 {
+  animation-delay: 0.5s;
+}
+
+.home-score-in-4 {
+  animation-delay: 0.66s;
+}
+
+.home-score-in-5 {
+  animation-delay: 0.82s;
+}
+
+@keyframes home-spark {
+  from {
+    stroke-dashoffset: 180;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.home-spark-line {
+  stroke-dasharray: 180;
+  animation: home-spark 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.45s both;
+}
+
+.home-msg {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    grid-template-rows 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.45s ease,
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.home-msg > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.home-msg.is-in {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: none;
+}
+
+.home-msg.is-in > * {
+  overflow: visible;
+}
+
+.home-metrics-score {
+  font-size: clamp(5.4rem, 9vw, 8.2rem);
+  transition: font-size 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.home-metrics-inline {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  text-align: right;
+  transition:
+    grid-template-rows 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.35s ease;
+}
+
+.home-metrics-inline > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.home-metrics-inline-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  white-space: nowrap;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.home-metrics-inline-score {
+  font-size: 1.15rem;
+  letter-spacing: -0.05em;
+  color: #fff;
+}
+
+.home-metrics-inline-delta {
+  font-size: 0.95rem;
+  letter-spacing: -0.03em;
+  color: var(--home-cta);
+}
+
+.home-metrics-inline-band {
+  display: block;
+  margin-top: 0.2rem;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.home-metrics.is-compact .home-metrics-inline {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.home-metrics.is-compact .home-metrics-lead {
+  display: none;
+}
+
+.home-metrics-detail {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-rows 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.4s ease,
+    margin 0.65s ease;
+}
+
+.home-metrics-detail > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.home-metrics.is-compact .home-metrics-detail {
+  grid-template-rows: 0fr;
+  margin-top: 0;
+  opacity: 0;
+}
+
+@keyframes home-metrics-flash {
+  0%,
+  100% {
+    filter: none;
+  }
+  45% {
+    filter: brightness(1.55);
+  }
+}
+
+.home-metrics-flash {
+  animation: home-metrics-flash 0.55s ease 1.05s both;
+}
+
+@keyframes home-type-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.28;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.home-type-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  animation: home-type-dot 1s ease-in-out infinite;
+}
+
+.home-type-dot:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.home-type-dot:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
 .home-proposed-day {
   animation: home-rise 0.4s ease 1.45s both;
 }
@@ -458,8 +660,26 @@ body {
   .home-select-day,
   .home-ring-arc,
   .home-bar,
-  .home-bar-proposed {
+  .home-bar-proposed,
+  .home-score-in,
+  .home-spark-line,
+  .home-msg,
+  .home-metrics-flash,
+  .home-type-dot {
     animation: none;
+    transition: none;
+  }
+
+  .home-metrics-score,
+  .home-metrics-detail,
+  .home-metrics-inline {
+    transition: none;
+  }
+
+  .home-msg {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    transform: none;
   }
 
   .home-select-day {

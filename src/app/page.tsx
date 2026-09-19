@@ -4,15 +4,15 @@ import { HomeFaq } from "@/components/home/faq";
 import { HomeFooter } from "@/components/home/footer";
 import { HomeHeader } from "@/components/home/header";
 import { HomeHero } from "@/components/home/hero";
-import { HomePhoto } from "@/components/home/photo";
 import { HomeHistory } from "@/components/home/history";
 import { HomeIngest } from "@/components/home/ingest";
 import { HomeMemory } from "@/components/home/memory";
-import { HomeMetrics } from "@/components/home/metrics";
+import { HomePhoto } from "@/components/home/photo";
 import { HomeProviders } from "@/components/home/providers";
-import { HomeQuestions } from "@/components/home/questions";
 import { HomeReveal } from "@/components/home/reveal";
-import { HomeTalk } from "@/components/home/talk";
+import { HomeReview } from "@/components/home/review";
+import { HomeSession } from "@/components/home/session";
+import { HomeState } from "@/components/home/state";
 import { HomeTrust } from "@/components/home/trust";
 import { createClient } from "@/lib/supabase/server";
 
@@ -38,14 +38,18 @@ export default async function Home() {
 
         <main id="main">
           <HomeHero signedIn={signedIn} />
-          <HomeTalk />
-          <HomeQuestions />
+          <HomeReveal>
+            <HomeSession />
+          </HomeReveal>
+          <HomeReveal>
+            <HomeReview />
+          </HomeReveal>
+          <HomeReveal>
+            <HomeState />
+          </HomeReveal>
           <HomeHistory />
           <HomeReveal>
             <HomeMemory />
-          </HomeReveal>
-          <HomeReveal>
-            <HomeMetrics />
           </HomeReveal>
           <HomeIngest />
           <HomeReveal>
@@ -65,8 +69,9 @@ export default async function Home() {
                 Stop guessing whether
                 <span className="block">the work is working.</span>
               </h2>
-              <p className="mt-8 max-w-md text-[17px] leading-8 text-white/70">
-                Connect your training. Add your races. Ask Ahead.
+              <p className="mt-8 max-w-lg text-[17px] leading-8 text-white/70">
+                Train. See what it did. Adjust when you need to. Learn from the
+                block. Go again.
               </p>
               <div className="mt-10 flex flex-wrap items-center gap-5">
                 {signedIn ? (
