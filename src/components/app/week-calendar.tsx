@@ -20,6 +20,7 @@ import {
   CALENDAR_CHANGED_EVENT,
   CALENDAR_EVENT_COLUMNS,
   CALENDAR_PREVIEW_EVENT,
+  moveCalendarEvent,
   parseCalendarEvent,
   type CalendarEvent,
   type CalendarPreview,
@@ -41,7 +42,7 @@ import {
 import { formatDistance, formatDuration, formatElevation, type Units } from "@/lib/units";
 import { ACTIVITY_PARAM } from "@/lib/activity-modal";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Metrics = { potential_load: number | null } | { potential_load: number | null }[] | null;
 
@@ -105,6 +106,8 @@ export function WeekCalendar() {
   const [draft, setDraft] = useState<{ date: string; event: CalendarEvent | null } | null>(
     null,
   );
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dropKey, setDropKey] = useState<string | null>(null);
   const todayKey = dateKeyInZone(new Date(), user.timezone);
   const thisMonth = monthKeyInZone(new Date(), user.timezone);
 
@@ -191,6 +194,22 @@ export function WeekCalendar() {
       window.removeEventListener(CALENDAR_PREVIEW_EVENT, onPreview);
     };
   }, []);
+
+  async function movePlanned(eventId: string, toDate: string) {
+    const event = events?.find((row) => row.id === eventId);
+    if (!event || event.date === toDate || event.date < todayKey || toDate < todayKey) {
+      return;
+    }
+    setEvents(
+      (current) =>
+        current?.map((row) => (row.id === eventId ? { ...row, date: toDate } : row)) ?? null,
+    );
+    try {
+      await moveCalendarEvent(createClient(), eventId, toDate);
+    } catch {
+      setRefresh((value) => value + 1);
+    }
+  }
 
   const days = useMemo(() => {
     const keys = monthGridKeys(month);
@@ -297,7 +316,34 @@ export function WeekCalendar() {
       ) : null}
 
       <div className="mt-8 overflow-x-auto">
-        <div className="min-w-[72rem] overflow-hidden rounded-md border border-line">
+        <div
+          className="min-w-[72rem] overflow-hidden rounded-md border border-line"
+          onDragOver={(event) => {
+            if (!draggingId) {
+              return;
+            }
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "move";
+            const next = nearestDropDay(event.clientX, event.clientY, todayKey);
+            if (next !== dropKey) {
+              setDropKey(next);
+            }
+          }}
+          onDrop={(event) => {
+            if (!draggingId) {
+              return;
+            }
+            event.preventDefault();
+            const eventId = event.dataTransfer.getData("text/plain");
+            const date =
+              dropKey ?? nearestDropDay(event.clientX, event.clientY, todayKey);
+            if (eventId && date) {
+              setDraggingId(null);
+              setDropKey(null);
+              void movePlanned(eventId, date);
+            }
+          }}
+        >
           <div className="grid grid-cols-[repeat(7,minmax(0,1fr))_8.5rem] divide-x divide-line border-b border-line bg-paper">
             {WEEKDAYS.map((label) => (
               <div
@@ -326,6 +372,14 @@ export function WeekCalendar() {
                     showWellness={showWellness}
                     onAdd={(date) => setDraft({ date, event: null })}
                     onEdit={(event) => setDraft({ date: event.date, event })}
+                    draggingId={draggingId}
+                    dropKey={dropKey}
+                    onDragSession={(id) => {
+                      setDraggingId(id);
+                      if (!id) {
+                        setDropKey(null);
+                      }
+                    }}
                   />
                 ))}
                 <WeekSummary
@@ -425,6 +479,30 @@ function dayChips(
   ];
 }
 
+function nearestDropDay(clientX: number, clientY: number, todayKey: string) {
+  const cells = document.querySelectorAll<HTMLElement>("[data-calendar-day]");
+  let best: string | null = null;
+  let bestDistance = Infinity;
+  for (const cell of cells) {
+    const date = cell.dataset.calendarDay;
+    if (!date || date < todayKey) {
+      continue;
+    }
+    const box = cell.getBoundingClientRect();
+    const dx =
+      clientX < box.left ? box.left - clientX : clientX > box.right ? clientX - box.right : 0;
+    const dy =
+      clientY < box.top ? box.top - clientY : clientY > box.bottom ? clientY - box.bottom : 0;
+    const distance = Math.hypot(dx, dy);
+    if (distance > 28 || distance >= bestDistance) {
+      continue;
+    }
+    bestDistance = distance;
+    best = date;
+  }
+  return best;
+}
+
 function WellnessSwitch({
   on,
   onChange,
@@ -464,8 +542,11 @@ function MonthDay({
   units,
   recovery,
   showWellness,
+  draggingId,
+  dropKey,
   onAdd,
   onEdit,
+  onDragSession,
 }: {
   day: { key: string; inMonth: boolean; items: ActivityRow[]; chips: DayChip[] };
   todayKey: string;
@@ -473,18 +554,35 @@ function MonthDay({
   units: Units;
   recovery: RecoveryObservation[];
   showWellness: boolean;
+  draggingId: string | null;
+  dropKey: string | null;
   onAdd: (date: string) => void;
   onEdit: (event: CalendarEvent) => void;
+  onDragSession: (id: string | null) => void;
 }) {
   const isToday = day.key === todayKey;
   const extra = Math.max(0, day.chips.length - VISIBLE);
   const visible = day.chips.slice(0, VISIBLE);
+  const canReceive = Boolean(draggingId) && day.key >= todayKey;
+  const isDrop = canReceive && dropKey === day.key;
+  const fromHere = draggingId
+    ? day.chips.some((chip) => chip.kind === "planned" && chip.event.id === draggingId)
+    : false;
 
   return (
     <div
-      className={`relative h-full min-w-0 overflow-hidden ${
+      data-calendar-day={day.key}
+      className={`relative h-full min-w-0 overflow-hidden transition-colors duration-150 ${
         showWellness ? "min-h-48" : "min-h-36"
-      } ${day.inMonth ? "bg-paper-raised" : "bg-paper"}`}
+      } ${
+        isDrop
+          ? "bg-forest/15 shadow-[inset_0_0_0_2px_var(--forest)]"
+          : canReceive
+            ? "shadow-[inset_0_0_0_1px_rgba(0,224,90,0.22)]"
+            : day.inMonth
+              ? "bg-paper-raised"
+              : "bg-paper"
+      }`}
     >
       <button
         type="button"
@@ -496,9 +594,11 @@ function MonthDay({
         <div className="flex justify-end">
           <span
             className={
-              isToday
-                ? "flex h-6 w-6 items-center justify-center rounded-full bg-ink text-[11px] font-medium text-paper"
-                : `text-[13px] ${day.inMonth ? "text-ink-soft" : "text-muted"}`
+              isDrop
+                ? "flex h-6 w-6 items-center justify-center rounded-full bg-forest text-[11px] font-medium text-[#04140a]"
+                : isToday
+                  ? "flex h-6 w-6 items-center justify-center rounded-full bg-ink text-[11px] font-medium text-paper"
+                  : `text-[13px] ${day.inMonth ? "text-ink-soft" : "text-muted"}`
             }
           >
             {formatDayNumber(day.key)}
@@ -525,11 +625,23 @@ function MonthDay({
                   event={chip.event}
                   removing={chip.removing}
                   units={units}
+                  movable={chip.event.date >= todayKey}
+                  dragging={draggingId === chip.event.id}
                   onEdit={onEdit}
+                  onDragSession={onDragSession}
                 />
               )}
             </li>
           ))}
+          {isDrop && !fromHere ? (
+            <li className="min-w-0">
+              <div className="rounded-sm border border-dashed border-forest bg-forest/20 px-2 py-2">
+                <p className="mono text-[9px] font-bold tracking-[0.14em] text-forest uppercase">
+                  Drop here
+                </p>
+              </div>
+            </li>
+          ) : null}
           {extra > 0 ? (
             <li className="px-1.5 text-[11px] text-muted">+{extra} more</li>
           ) : null}
@@ -593,13 +705,20 @@ function PlannedChip({
   event,
   removing,
   units,
+  movable,
+  dragging,
   onEdit,
+  onDragSession,
 }: {
   event: CalendarEvent;
   removing?: boolean;
   units: Units;
+  movable: boolean;
+  dragging: boolean;
   onEdit: (event: CalendarEvent) => void;
+  onDragSession: (id: string | null) => void;
 }) {
+  const dragged = useRef(false);
   const race = event.intent === "race";
   const stats = joinStats([
     formatDuration(event.planned_seconds),
@@ -609,9 +728,32 @@ function PlannedChip({
   return (
     <button
       type="button"
-      onClick={() => onEdit(event)}
+      draggable={movable}
+      onDragStart={(eventDrag) => {
+        if (!movable) {
+          eventDrag.preventDefault();
+          return;
+        }
+        dragged.current = true;
+        eventDrag.dataTransfer.setData("text/plain", event.id);
+        eventDrag.dataTransfer.effectAllowed = "move";
+        onDragSession(event.id);
+      }}
+      onDragEnd={() => {
+        onDragSession(null);
+        window.setTimeout(() => {
+          dragged.current = false;
+        }, 0);
+      }}
+      onClick={() => {
+        if (!dragged.current) {
+          onEdit(event);
+        }
+      }}
       className={`block w-full min-w-0 max-w-full overflow-hidden rounded-sm border border-dashed px-2 py-1.5 text-left ${
-        removing
+        movable ? "cursor-grab active:cursor-grabbing" : ""
+      } ${
+        removing || dragging
           ? "border-line bg-paper opacity-50"
           : "border-forest bg-paper hover:border-forest-hover hover:bg-paper-sunken"
       }`}

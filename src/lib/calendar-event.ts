@@ -175,6 +175,21 @@ export function pickMatchingActivity(
   );
 }
 
+export async function moveCalendarEvent(
+  client: CalendarClient,
+  eventId: string,
+  date: string,
+) {
+  const { error } = await client
+    .from("calendar_items")
+    .update({ date })
+    .eq("id", eventId);
+  if (error) {
+    throw error;
+  }
+  notifyCalendarChanged();
+}
+
 export async function setEventActivityLink(
   client: CalendarClient,
   eventId: string,
