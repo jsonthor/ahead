@@ -10,7 +10,7 @@ const links = [
   { href: "/#faq", label: "FAQ" },
 ];
 
-export function HomeHeader() {
+export function HomeHeader({ signedIn = false }: { signedIn?: boolean }) {
   return (
     <>
       <header className="fixed inset-x-0 top-0 z-50 border-b border-line bg-paper">
@@ -38,15 +38,7 @@ export function HomeHeader() {
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link
-              href="/login"
-              className="inline-flex h-11 items-center px-3 text-[16px] text-ink-soft transition-colors hover:text-ink sm:px-4"
-            >
-              Log in
-            </Link>
-            <Link href="/signup" className="home-cta home-cta-sm">
-              Coming soon
-            </Link>
+            <HomeAccountActions signedIn={signedIn} />
 
             <Dialog.Root>
               <Dialog.Trigger asChild>
@@ -92,19 +84,29 @@ export function HomeHeader() {
                         </Link>
                       </Dialog.Close>
                     ))}
-                    <Dialog.Close asChild>
-                      <Link
-                        href="/login"
-                        className="px-1 py-3 text-[17px] text-ink"
-                      >
-                        Log in
-                      </Link>
-                    </Dialog.Close>
-                    <Dialog.Close asChild>
-                      <Link href="/signup" className="home-cta mt-3 w-full">
-                        Coming soon
-                      </Link>
-                    </Dialog.Close>
+                    {signedIn ? (
+                      <Dialog.Close asChild>
+                        <Link href="/app" className="home-cta mt-3 w-full">
+                          Open Ahead
+                        </Link>
+                      </Dialog.Close>
+                    ) : (
+                      <>
+                        <Dialog.Close asChild>
+                          <Link
+                            href="/login"
+                            className="px-1 py-3 text-[17px] text-ink"
+                          >
+                            Log in
+                          </Link>
+                        </Dialog.Close>
+                        <Dialog.Close asChild>
+                          <Link href="/signup" className="home-cta mt-3 w-full">
+                            Coming soon
+                          </Link>
+                        </Dialog.Close>
+                      </>
+                    )}
                   </nav>
                 </Dialog.Content>
               </Dialog.Portal>
@@ -113,6 +115,30 @@ export function HomeHeader() {
         </div>
       </header>
       <div className="h-[4.25rem] sm:h-[4.75rem]" aria-hidden />
+    </>
+  );
+}
+
+function HomeAccountActions({ signedIn }: { signedIn: boolean }) {
+  if (signedIn) {
+    return (
+      <Link href="/app" className="home-cta home-cta-sm">
+        Open Ahead
+      </Link>
+    );
+  }
+
+  return (
+    <>
+      <Link
+        href="/login"
+        className="inline-flex h-11 items-center px-3 text-[16px] text-ink-soft transition-colors hover:text-ink sm:px-4"
+      >
+        Log in
+      </Link>
+      <Link href="/signup" className="home-cta home-cta-sm">
+        Coming soon
+      </Link>
     </>
   );
 }

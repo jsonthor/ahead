@@ -6,7 +6,7 @@ import { useState } from "react";
 
 import { HomePhoto } from "@/components/home/photo";
 
-export function HomeHero() {
+export function HomeHero({ signedIn = false }: { signedIn?: boolean }) {
   const [applied, setApplied] = useState(false);
 
   return (
@@ -21,8 +21,8 @@ export function HomeHero() {
           what’s changing — and decide what to do next.
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-x-7 gap-y-3">
-          <Link href="/signup" className="home-cta">
-            Coming soon
+          <Link href={signedIn ? "/app" : "/signup"} className="home-cta">
+            {signedIn ? "Open Ahead" : "Coming soon"}
           </Link>
           <a
             href="#product"

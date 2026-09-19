@@ -14,8 +14,17 @@ import { HomeQuestions } from "@/components/home/questions";
 import { HomeReveal } from "@/components/home/reveal";
 import { HomeTalk } from "@/components/home/talk";
 import { HomeTrust } from "@/components/home/trust";
+import { createClient } from "@/lib/supabase/server";
 
-export default function Home() {
+async function homepageSignedIn() {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getUser();
+  return Boolean(data.user);
+}
+
+export default async function Home() {
+  const signedIn = await homepageSignedIn();
+
   return (
     <div className="home">
       <HomeProviders>
@@ -25,10 +34,10 @@ export default function Home() {
         >
           Skip to content
         </a>
-        <HomeHeader />
+        <HomeHeader signedIn={signedIn} />
 
         <main id="main">
-          <HomeHero />
+          <HomeHero signedIn={signedIn} />
           <HomeTalk />
           <HomeQuestions />
           <HomeHistory />
@@ -44,14 +53,14 @@ export default function Home() {
           </HomeReveal>
           <HomeFaq />
 
-          <section className="relative min-h-[76vh] overflow-hidden">
+          <section className="relative min-h-screen overflow-hidden">
             <HomePhoto
-              src="/home/after.jpg"
-              alt="An athlete sitting beside a bike after a session"
-              objectPosition="70% 45%"
+              src="/home/onward.jpg"
+              alt="An athlete standing beside a bike, looking down the road"
+              objectPosition="72% 62%"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-black/20" />
-            <div className="relative z-10 mx-auto flex min-h-[76vh] max-w-[1470px] flex-col items-start justify-end px-4 py-24 sm:px-6 lg:px-8 lg:py-28">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/58 via-black/16 to-transparent" />
+            <div className="relative z-10 mx-auto flex min-h-screen max-w-[1470px] flex-col items-start justify-end px-4 py-24 sm:px-6 lg:px-8 lg:py-28">
               <h2 className="home-display max-w-4xl text-[clamp(3rem,6vw,7.2rem)] text-white">
                 Stop guessing whether
                 <span className="block">the work is working.</span>
@@ -60,15 +69,23 @@ export default function Home() {
                 Connect your training. Add your races. Ask Ahead.
               </p>
               <div className="mt-10 flex flex-wrap items-center gap-5">
-                <Link href="/signup" className="home-cta">
-                  Coming soon
-                </Link>
-                <Link
-                  href="/login"
-                  className="inline-flex h-11 items-center text-[14px] text-white/60 hover:text-white"
-                >
-                  Log in
-                </Link>
+                {signedIn ? (
+                  <Link href="/app" className="home-cta">
+                    Open Ahead
+                  </Link>
+                ) : (
+                  <>
+                    <Link href="/signup" className="home-cta">
+                      Coming soon
+                    </Link>
+                    <Link
+                      href="/login"
+                      className="inline-flex h-11 items-center text-[14px] text-white/60 hover:text-white"
+                    >
+                      Log in
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </section>
