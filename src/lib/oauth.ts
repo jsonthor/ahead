@@ -116,3 +116,15 @@ export function safeReturnPath(value: string | undefined): string {
   }
   return value;
 }
+
+export function requestOrigin(request: Request) {
+  const url = new URL(request.url);
+  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+  const host = forwardedHost || url.host;
+  const proto = forwardedProto || url.protocol.replace(":", "");
+  if (host === "getahead.fit" || host === "www.getahead.fit") {
+    return "https://www.getahead.fit";
+  }
+  return `${proto}://${host}`;
+}

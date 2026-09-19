@@ -13,7 +13,7 @@ import {
   issuerFromMcpUrl,
   loadHandoff,
 } from "@/lib/coros/oauth";
-import { safeReturnPath } from "@/lib/oauth";
+import { requestOrigin, safeReturnPath } from "@/lib/oauth";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
@@ -90,7 +90,7 @@ export async function openCorosClient(input: {
 }
 
 export async function startCorosConnect(request: Request, returnPath: string) {
-  const origin = new URL(request.url).origin;
+  const origin = requestOrigin(request);
   const supabase = await createClient();
   const {
     data: { user },
@@ -138,7 +138,7 @@ export async function startCorosConnect(request: Request, returnPath: string) {
 
 export async function finishCorosConnect(request: Request) {
   const url = new URL(request.url);
-  const origin = url.origin;
+  const origin = requestOrigin(request);
   const params = url.searchParams;
   const state = params.get("state");
   const denied = params.get("error");

@@ -13,8 +13,10 @@ import { safeReturnPath } from "@/lib/oauth";
 import type { Json } from "@/lib/database.types";
 
 export const COROS_MCP_URLS = [
-  "https://mcpeu.coros.com/mcp",
   "https://mcp.coros.com/mcp",
+  "https://mcpeu.coros.com/mcp",
+  "https://mcpus.coros.com/mcp",
+  "https://mcpcn.coros.com/mcp",
 ] as const;
 
 export const COROS_AS_COOKIE = "potential_coros_as";
@@ -63,6 +65,14 @@ function jsonDiscovery(state: OAuthDiscoveryState): Json {
 
 export function corosRedirectUrl(origin: string) {
   return `${origin}/api/integrations/coros/callback`;
+}
+
+function clientAllowsRedirect(info: StoredOAuthClientInformation, redirectUrl: string) {
+  const uris = (info as { redirect_uris?: unknown }).redirect_uris;
+  if (!Array.isArray(uris) || uris.length === 0) {
+    return true;
+  }
+  return uris.includes(redirectUrl);
 }
 
 export class CorosOAuthProvider implements OAuthClientProvider {
@@ -137,8 +147,9 @@ export class CorosOAuthProvider implements OAuthClientProvider {
         .select("client_information")
         .eq("issuer", issuer)
         .maybeSingle();
-      if (data?.client_information) {
-        return data.client_information as StoredOAuthClientInformation;
+      const info = data?.client_information as StoredOAuthClientInformation | undefined;
+      if (info && clientAllowsRedirect(info, this.redirectUrl)) {
+        return info;
       }
     }
     return undefined;
