@@ -3,8 +3,7 @@ import { addDaysToKey, dateKeyInZone } from "@/lib/calendar";
 import { CALENDAR_EVENT_COLUMNS, parseCalendarEvent } from "@/lib/calendar-event";
 import { summarize, type OnboardingAnswers } from "@/lib/onboarding";
 import type { Database, Json } from "@/lib/database.types";
-import { fetchRouteAttempts } from "@/lib/load/direction-data";
-import { DIRECTION_HISTORY_DAYS, inferDirection, isDirectionCalibration } from "@/lib/load/direction";
+import { inferPerformance, PERFORMANCE_HISTORY_DAYS } from "@/lib/load/performance";
 import { displayPotential } from "@/lib/load/potential";
 import { displayTrainingState } from "@/lib/load/training-state";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -28,17 +27,17 @@ export async function buildContextPacket(
   timeZone: string,
 ) {
   const today = dateKeyInZone(new Date(), timeZone);
-  const from = addDaysToKey(today, -(DIRECTION_HISTORY_DAYS - 1));
+  const from = addDaysToKey(today, -(PERFORMANCE_HISTORY_DAYS - 1));
   const recentFrom = addDaysToKey(today, -13);
   const to = addDaysToKey(today, 14);
   const activityFrom = `${addDaysToKey(recentFrom, -1)}T00:00:00.000Z`;
   const activityTo = `${addDaysToKey(to, 2)}T00:00:00.000Z`;
 
-  const [profileRes, loadsRes, eventsRes, activitiesRes, memoriesRes, routeAttempts] =
+  const [profileRes, loadsRes, eventsRes, activitiesRes, memoriesRes] =
     await Promise.all([
     client
       .from("profiles")
-      .select("display_name, timezone, units, date_of_birth, onboarding, potential_calibration")
+      .select("display_name, timezone, units, date_of_birth, onboarding")
       .eq("id", athleteId)
       .maybeSingle(),
     client
@@ -71,7 +70,6 @@ export async function buildContextPacket(
       .is("superseded_at", null)
       .order("importance", { ascending: false })
       .limit(12),
-    fetchRouteAttempts(client, today, DIRECTION_HISTORY_DAYS),
   ]);
 
   const profile = profileRes.data;
@@ -80,10 +78,7 @@ export async function buildContextPacket(
   const todayLoad = [...loads]
     .reverse()
     .find((row) => row.date <= today && row.potential != null);
-  const calibration = isDirectionCalibration(profile?.potential_calibration)
-    ? profile.potential_calibration
-    : null;
-  const direction = inferDirection(loads, today, routeAttempts, calibration);
+  const performance = inferPerformance(loads, today);
   const shown =
     todayLoad?.fitness != null && todayLoad.fatigue != null
       ? displayTrainingState({
@@ -137,10 +132,18 @@ export async function buildContextPacket(
     todayState: todayLoad
       ? {
           asOf: todayLoad.date,
-          readiness:
-            todayLoad.potential != null ? displayPotential(todayLoad.potential) : null,
-          potential:
-            todayLoad.potential != null ? displayPotential(todayLoad.potential) : null,
+          performance: {
+            score: performance.score,
+            delta: performance.delta,
+            state: performance.state,
+            label: performance.label,
+            recentLabel: performance.recentLabel,
+            summary: performance.summary,
+            trend: performance.trend,
+            guarded: performance.guarded,
+          },
+          readiness: performance.score,
+          potential: performance.score,
           aerobic:
             todayLoad.aerobic_reserve != null
               ? displayPotential(todayLoad.aerobic_reserve)
@@ -157,24 +160,6 @@ export async function buildContextPacket(
           fatigue: shown?.fatigue ?? todayLoad.fatigue,
           form: shown?.form ?? todayLoad.form,
           load: todayLoad.training_load,
-          direction: {
-            state: direction.state,
-            label: direction.label,
-            score: direction.score,
-            strain: direction.strain,
-            summary: direction.summary,
-            conclusion: direction.conclusion,
-            confidence: direction.confidence,
-            confidenceLabel: direction.confidenceLabel,
-            performanceNote: direction.performanceNote,
-            explanation: direction.explanation,
-            evidence: direction.evidence,
-            signals: direction.signals,
-            windowLabel: direction.windowLabel,
-            windowDays: direction.windowDays,
-            trajectory: direction.trajectory,
-            trajectoryLabel: direction.trajectoryLabel,
-          },
         }
       : null,
     last14Days: {

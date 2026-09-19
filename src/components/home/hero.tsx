@@ -52,13 +52,7 @@ export function HomeHero({ signedIn = false }: { signedIn?: boolean }) {
 
           <div className="relative z-10 flex h-full flex-col items-end justify-center p-5 text-right sm:p-7 lg:p-8">
             <p className="home-mono text-[10px] tracking-[0.16em] text-white/70 uppercase">
-              Direction
-            </p>
-            <p className="home-mono mt-1 text-[clamp(2.4rem,4.6vw,3.6rem)] leading-none tracking-[-0.06em] text-white [text-shadow:0_1px_18px_rgba(0,0,0,0.45)]">
-              Building
-            </p>
-            <p className="home-mono mt-6 text-[10px] tracking-[0.16em] text-white/70 uppercase">
-              Readiness
+              Performance
             </p>
             <p className="home-mono mt-1 text-[clamp(3.6rem,6vw,5.4rem)] leading-none tracking-[-0.08em] text-white [text-shadow:0_1px_18px_rgba(0,0,0,0.45)]">
               49
@@ -70,7 +64,7 @@ export function HomeHero({ signedIn = false }: { signedIn?: boolean }) {
               <ReadinessSpark />
             </div>
             <p className="home-mono mt-3 text-[10px] tracking-[0.12em] text-white/70 uppercase">
-              since Monday
+              Building · since Monday
             </p>
             <dl className="mt-6 w-[9.5rem] space-y-2.5">
               {HERO_SCORES.map((score) => (

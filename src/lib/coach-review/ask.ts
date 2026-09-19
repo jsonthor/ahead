@@ -149,5 +149,5 @@ export function buildBlockMessage() {
 }
 
 export function buildBlockHref(reviewId: string) {
-  return `/app/calendar?${BUILD_REVIEW_PARAM}=${reviewId}`;
+  return `/app/activities?${BUILD_REVIEW_PARAM}=${reviewId}`;
 }

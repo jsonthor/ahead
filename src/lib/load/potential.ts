@@ -2,7 +2,7 @@
  * Potential v0.7 — how much of the capacity already built is currently
  * expressible, on a 0–100 athlete-relative scale.
  *
- * Not freshness (Fatigue), not Direction, not Race Readiness.
+ * Shown as Performance. Not freshness (Fatigue), not race result.
  * Built from Potential mix + load. FIT/streams are not required.
  * Calibration is frozen to that mix; bump POTENTIAL_VERSION when mix
  * inputs change (HR zone model) so stale 0–100 scales are discarded.

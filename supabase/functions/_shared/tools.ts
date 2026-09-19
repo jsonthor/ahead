@@ -1,10 +1,5 @@
 import type { UserClient } from "./client.ts";
-import {
-  DIRECTION_HISTORY_DAYS,
-  fetchRouteAttempts,
-  inferDirection,
-  isDirectionCalibration,
-} from "./direction.ts";
+import { inferPerformance } from "./performance.ts";
 import {
   parseOperations,
   referencedSessionIds,
@@ -18,7 +13,7 @@ const TOOLS = [
     type: "function",
     name: "get_current_training_state",
     description:
-      "The dashboard summary: Direction (band: Building / Maintaining / Declining / Unknown, plus confidence, strain overlay, and summary) and today's Readiness, Fitness, Fatigue, Form from daily_loads. Do not quote a Direction number. Fitness rising is stimulus, not proof of gain. Already rounded to match the UI. JSON field for Readiness is `potential`. Never recompute these numbers. Does not include calendar — use get_calendar and get_upcoming_races.",
+      "The dashboard summary: Performance (integer score, 7-day delta, and Building / Maintaining / Declining / Unknown) plus Fitness, Fatigue, Form from daily_loads. Performance is the one verdict. Fitness rising is stimulus, not proof of gain. Already rounded to match the UI. JSON field for the daily Performance score is `potential`. Never recompute these numbers. Does not include calendar — use get_calendar and get_upcoming_races.",
     parameters: {
       type: "object",
       additionalProperties: false,
@@ -31,7 +26,7 @@ const TOOLS = [
     type: "function",
     name: "get_training_summary",
     description:
-      "This-week-style summary for an inclusive date range: sessions, formatted duration, load, easy/specific mix, plus dashboard-rounded Readiness/Fitness at start and end from daily_loads. Use this instead of summing activities. JSON field for Readiness is `potential`. Never treat start/end Readiness as something to recalculate.",
+      "This-week-style summary for an inclusive date range: sessions, formatted duration, load, easy/specific mix, plus dashboard-rounded Performance/Fitness at start and end from daily_loads. Use this instead of summing activities. JSON field for Performance is `potential`. Never treat start/end Performance as something to recalculate.",
     parameters: {
       type: "object",
       additionalProperties: false,
@@ -47,7 +42,7 @@ const TOOLS = [
     type: "function",
     name: "compare_training_periods",
     description:
-      "Compare two inclusive date ranges using the same summaries as get_training_summary. Backend does the maths; you interpret. Headline Readiness/Fitness/Fatigue/Form are dashboard-rounded daily_loads values (Readiness JSON field: `potential`).",
+      "Compare two inclusive date ranges using the same summaries as get_training_summary. Backend does the maths; you interpret. Headline Performance/Fitness/Fatigue/Form are dashboard-rounded daily_loads values (Performance JSON field: `potential`).",
     parameters: {
       type: "object",
       additionalProperties: false,
@@ -332,52 +327,33 @@ export async function executeTool(
 
   if (name === "get_current_training_state") {
     const asOf = str(args.date) || todayKey(timeZone);
-    const [{ data, error }, series, profile] = await Promise.all([
+    const [{ data, error }, series] = await Promise.all([
       client.rpc("ai_current_training_state", {
         p_date: str(args.date) || undefined,
       }),
       client
         .from("daily_loads")
-        .select(
-          "date, training_load, fitness, fatigue, form, potential, aerobic_reserve, specific_capacity, aerobic_raw, specific_raw",
-        )
+        .select("date, potential, aerobic_reserve, specific_capacity")
         .lte("date", asOf)
         .order("date", { ascending: false })
-        .limit(DIRECTION_HISTORY_DAYS),
-      client.from("profiles").select("potential_calibration").eq("id", athleteId).maybeSingle(),
+        .limit(90),
     ]);
     if (error) {
       return { result: { error: error.message } };
     }
-    const attempts = await fetchRouteAttempts(client, asOf);
-    const direction = inferDirection(
-      [...(series.data ?? [])].reverse(),
-      asOf,
-      attempts,
-      isDirectionCalibration(profile.data?.potential_calibration)
-        ? profile.data.potential_calibration
-        : null,
-    );
+    const performance = inferPerformance([...(series.data ?? [])].reverse(), asOf);
     return {
       result: {
         ...(data && typeof data === "object" ? data : { data }),
-        direction: {
-          state: direction.state,
-          label: direction.label,
-          score: direction.score,
-          strain: direction.strain,
-          summary: direction.summary,
-          conclusion: direction.conclusion,
-          confidence: direction.confidence,
-          confidenceLabel: direction.confidenceLabel,
-          performanceNote: direction.performanceNote,
-          explanation: direction.explanation,
-          evidence: direction.evidence,
-          signals: direction.signals,
-          windowLabel: direction.windowLabel,
-          windowDays: direction.windowDays,
-          trajectory: direction.trajectory,
-          trajectoryLabel: direction.trajectoryLabel,
+        performance: {
+          score: performance.score,
+          delta: performance.delta,
+          state: performance.state,
+          label: performance.label,
+          recentLabel: performance.recentLabel,
+          summary: performance.summary,
+          trend: performance.trend,
+          guarded: performance.guarded,
         },
       },
     };

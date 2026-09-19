@@ -82,13 +82,13 @@ export function UpcomingSessions() {
         <p className="kicker">
           Coming up
         </p>
-        <Link href="/app/calendar" className="text-[13px] text-ink-soft hover:text-ink">
-          Calendar
+        <Link href="/app/activities" className="text-[13px] text-ink-soft hover:text-ink">
+          Activities
         </Link>
       </div>
       {events.length === 0 ? (
         <p className="mt-3 text-sm text-ink-soft">
-          Nothing planned. Add sessions and races on the calendar.
+          Nothing planned. Add sessions and races on Activities.
         </p>
       ) : (
         <ul className="mt-3 divide-y divide-line overflow-hidden rounded-md border border-line">
@@ -100,7 +100,7 @@ export function UpcomingSessions() {
             return (
               <li key={event.id}>
                 <Link
-                  href="/app/calendar"
+                  href="/app/activities"
                   className="flex items-baseline gap-4 bg-paper-raised px-5 py-4 hover:bg-paper-sunken"
                 >
                   <time

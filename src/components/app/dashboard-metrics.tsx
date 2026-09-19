@@ -17,15 +17,14 @@ import {
   unmapFromHundred,
   type PotentialCalibration,
 } from "@/lib/load/potential";
-import { DirectionChart } from "@/components/app/direction-chart";
-import { fetchRouteAttempts } from "@/lib/load/direction-data";
 import {
-  directionTone,
-  inferDirectionSeries,
-  type DirectionDay,
-  type DirectionReading,
-  type RouteResponseAttempt,
-} from "@/lib/load/direction";
+  componentWord,
+  inferPerformance,
+  performanceTone,
+  performanceWhyLine,
+  strainWord,
+} from "@/lib/load/performance";
+import * as Dialog from "@radix-ui/react-dialog";
 import {
   displayTrainingState,
   formatTrainingMetric,
@@ -45,7 +44,6 @@ import {
   type RecoveryObservation,
 } from "@/lib/recovery";
 import { createClient } from "@/lib/supabase/client";
-import * as Dialog from "@radix-ui/react-dialog";
 import { useEffect, useMemo, useState } from "react";
 
 type LoadRow = {
@@ -106,7 +104,6 @@ export function DashboardMetrics() {
   const [historyStart, setHistoryStart] = useState<string | null>(null);
   const [range, setRange] = useState<ChartRangeId>("3m");
   const [reload, setReload] = useState(0);
-  const [routeAttempts, setRouteAttempts] = useState<RouteResponseAttempt[]>([]);
 
   useEffect(() => {
     function onChange() {
@@ -183,7 +180,6 @@ export function DashboardMetrics() {
         }
         setRecovery((data as RecoveryObservation[] | null) ?? []);
       });
-    void fetchRouteAttempts(supabase, today).then(setRouteAttempts);
   }, [reload, today, user.id]);
 
   const actual = useMemo(
@@ -202,27 +198,21 @@ export function DashboardMetrics() {
     const from = addDaysToKey(today, -(selected.days - 1));
     return actual.filter((row) => row.date >= from);
   }, [actual, range, today]);
-  const directionDays = useMemo<DirectionDay[]>(
+  const performanceDays = useMemo(
     () =>
       (rows ?? [])
         .filter((row) => row.status !== "forecast")
         .map((row) => ({
           date: row.date,
-          training_load: row.training_load,
-          fitness: row.fitness,
-          fatigue: row.fatigue,
-          form: row.form,
           potential: row.potential,
           aerobic_reserve: row.aerobic_reserve,
           specific_capacity: row.specific_capacity,
-          aerobic_raw: row.aerobic_raw,
-          specific_raw: row.specific_raw,
         })),
     [rows],
   );
-  const directionSeries = useMemo(
-    () => inferDirectionSeries(directionDays, today, routeAttempts, calibration),
-    [calibration, directionDays, routeAttempts, today],
+  const performance = useMemo(
+    () => inferPerformance(performanceDays, today),
+    [performanceDays, today],
   );
 
   if (rows == null || headline === undefined) {
@@ -252,33 +242,38 @@ export function DashboardMetrics() {
   }
 
   const shown = displayTrainingState(current);
-  const potential = displayPotential(current.potential);
+  const score = performance.score ?? displayPotential(current.potential);
   const establishing = isEstablishing(historyStart, today);
   const days = historyDays(historyStart, today);
-  const direction = directionSeries.at(-1) ?? {
-    state: "unknown" as const,
-    label: "Unknown",
-    score: null,
-    strain: false,
-    summary: "A few more weeks of completed training before Direction is a fair reading.",
-    conclusion: "A few more weeks of completed training before Direction is a fair reading.",
-    confidence: "low" as const,
-    confidenceLabel: "Low confidence",
-    performanceNote: null,
-    explanation: "",
-    evidence: [],
-    signals: [],
-    windowLabel: "Previous 3 weeks",
-    windowDays: 0,
-    asOf: null,
-    trajectory: null,
-    trajectoryLabel: null,
-  };
-  const weekAgo = addDaysToKey(today, -7);
-  const prior = [...actual].reverse().find((row) => row.date <= weekAgo);
-  const readinessDelta =
-    prior != null ? potential - displayPotential(prior.potential) : null;
-  const cards = [
+  const lookback = addDaysToKey(current.date, -28);
+  const baseline = [...actual].reverse().find((row) => row.date <= lookback);
+  const why = [
+    {
+      id: "aerobic",
+      label: "Aerobic capacity",
+      value: displayPotential(current.aerobic_reserve),
+      body: componentWord(
+        baseline ? current.aerobic_reserve - baseline.aerobic_reserve : null,
+        displayPotential(current.aerobic_reserve),
+      ),
+    },
+    {
+      id: "specific",
+      label: "Specific capacity",
+      value: displayPotential(current.specific_capacity),
+      body: componentWord(
+        baseline ? current.specific_capacity - baseline.specific_capacity : null,
+        displayPotential(current.specific_capacity),
+      ),
+    },
+    {
+      id: "strain",
+      label: "Strain",
+      value: displayPotential(current.acute_fatigue),
+      body: strainWord(current.acute_fatigue),
+    },
+  ];
+  const loadCards = [
     {
       id: "fitness",
       label: "Fitness",
@@ -301,43 +296,59 @@ export function DashboardMetrics() {
 
   return (
     <>
-      <section className="mt-10">
-        <p className="kicker">Now</p>
-        <div className="mt-3 grid gap-px overflow-hidden border border-line bg-line sm:grid-cols-2">
-          <DirectionWhy
-            reading={direction}
-            series={directionSeries}
-            today={today}
-          />
-          <div className="bg-paper-raised px-5 py-6">
-            <p className="kicker">Readiness</p>
-            <div className="mt-2 flex items-end gap-3">
-              <PotentialWhy
-                potential={potential}
-                aerobic={displayPotential(current.aerobic_reserve)}
-                specific={displayPotential(current.specific_capacity)}
-                suppression={displayPotential(current.acute_fatigue)}
-              />
-              {readinessDelta != null && readinessDelta !== 0 ? (
+      <section className="mt-10 border border-line bg-paper-raised px-5 py-6">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <p className="kicker">Performance</p>
+            <div className="mt-1.5 flex flex-wrap items-end gap-3">
+              <p className="metric text-[2.6rem] leading-none text-ink">{score}</p>
+              {performance.delta != null && performance.delta !== 0 ? (
                 <p
-                  className={`mb-1 text-sm ${
-                    readinessDelta < 0 ? "text-ember" : "text-forest"
+                  className={`mb-0.5 text-sm ${
+                    performance.delta < 0 ? "text-ember" : "text-forest"
                   }`}
                 >
-                  {readinessDelta > 0 ? "↑" : "↓"} {Math.abs(readinessDelta)}
+                  {performance.delta > 0 ? "↑" : "↓"} {Math.abs(performance.delta)}
                 </p>
               ) : null}
             </div>
-            <p className="mt-3 text-sm text-ink-soft">
-              How much of your built capacity is expressible today.
-            </p>
+            <button
+              type="button"
+              onClick={() =>
+                document.getElementById("performance-history")?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                })
+              }
+              className={`mt-2 text-[15px] underline decoration-line decoration-2 underline-offset-4 hover:decoration-ink ${performanceTone(performance.state)}`}
+            >
+              {performance.label}
+            </button>
           </div>
+          {why.map((card) => (
+            <div key={card.id}>
+              <p className="kicker">{card.label}</p>
+              <p className="metric mt-1.5 text-[2.6rem] leading-none text-ink">{card.value}</p>
+              {card.body === "At top of range" || card.body === "At bottom of range" ? (
+                <RangeNote label={card.label} body={card.body} />
+              ) : (
+                <p className="mt-2 text-[15px] text-ink-soft">{card.body ?? "—"}</p>
+              )}
+            </div>
+          ))}
         </div>
+        <p className="mt-5 max-w-3xl text-sm leading-6 text-ink-soft">
+          {performanceWhyLine({
+            aerobic: why[0]?.body ?? null,
+            specific: why[1]?.body ?? null,
+            strain: why[2]?.body ?? null,
+          })}
+        </p>
       </section>
       <section className="mt-8">
-        <p className="kicker">What’s driving it</p>
+        <p className="kicker">Training load</p>
         <dl className="mt-3 grid gap-px overflow-hidden border border-line bg-line sm:grid-cols-3">
-          {cards.map((card) => (
+          {loadCards.map((card) => (
             <div key={card.id} className="bg-paper-raised px-5 py-5">
               <dt className="kicker">{card.label}</dt>
               <dd className="mt-2">
@@ -478,117 +489,26 @@ function RangePill({
   );
 }
 
-function DirectionWhy({
-  reading,
-  series,
-  today,
-}: {
-  reading: DirectionReading;
-  series: DirectionReading[];
-  today: string;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <Dialog.Root open={open} onOpenChange={setOpen}>
-      <Dialog.Trigger asChild>
-        <button
-          type="button"
-          className="w-full bg-paper-raised px-5 py-6 text-left transition-colors hover:bg-paper"
-        >
-          <p className="kicker">Direction</p>
-          <div className="mt-2 flex items-end gap-3">
-            <p className={`title text-[2.1rem] ${directionTone(reading.state, reading.strain)}`}>
-              {reading.label}
-            </p>
-            {reading.trajectoryLabel ? (
-              <p className="mb-1.5 text-sm text-ink-soft">{reading.trajectoryLabel}</p>
-            ) : null}
-          </div>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-ink-soft">{reading.summary}</p>
-          <p className="mt-3 text-sm text-ink-soft">
-            <span className="text-ink">{reading.confidenceLabel}</span>
-            {reading.performanceNote ? ` · ${reading.performanceNote}` : null}
-          </p>
-        </button>
-      </Dialog.Trigger>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 z-50 flex max-h-[min(44rem,calc(100svh-2rem))] w-[min(52rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden border border-line bg-paper-raised outline-none">
-          <div className="flex items-center justify-end border-b border-line px-4 py-2">
-            <Dialog.Close asChild>
-              <button
-                type="button"
-                className="inline-flex h-9 items-center rounded-sm px-3 text-sm text-ink-soft hover:bg-paper-sunken hover:text-ink"
-              >
-                Close
-              </button>
-            </Dialog.Close>
-          </div>
-          <div className="min-h-0 flex-1 overflow-y-auto p-6">
-            <Dialog.Title className="title text-[2rem] text-ink">
-              {reading.label}
-            </Dialog.Title>
-            <Dialog.Description className="mt-2 text-sm text-ink-soft">
-              {reading.summary}
-            </Dialog.Description>
-            <div className="mt-5">
-              <DirectionChart
-                points={series}
-                today={today}
-                onAsked={() => setOpen(false)}
-              />
-            </div>
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
-  );
-}
-
-function PotentialWhy({
-  potential,
-  aerobic,
-  specific,
-  suppression,
-}: {
-  potential: number;
-  aerobic: number;
-  specific: number;
-  suppression: number;
-}) {
+function RangeNote({ label, body }: { label: string; body: string }) {
+  const top = body === "At top of range";
   return (
     <Dialog.Root>
       <Dialog.Trigger asChild>
         <button
           type="button"
-          className="metric text-[2rem] text-ink underline decoration-line decoration-2 underline-offset-6 transition-colors hover:decoration-ink"
+          className="mt-2 text-left text-[15px] text-ink-soft underline decoration-line decoration-2 underline-offset-4 hover:text-ink hover:decoration-ink"
         >
-          {potential}
+          {body}
         </button>
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/70" />
         <Dialog.Content className="fixed top-1/2 left-1/2 z-50 w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 border border-line bg-paper-raised p-6 outline-none">
-          <Dialog.Title className="title text-[2rem] text-ink">
-            Why {potential}?
-          </Dialog.Title>
-          <div className="mt-5 space-y-3 text-sm">
-            <p className="flex items-baseline justify-between gap-4">
-              <span className="text-ink-soft">Aerobic Reserve</span>
-              <span className="mono text-ink">{aerobic}</span>
-            </p>
-            <p className="flex items-baseline justify-between gap-4">
-              <span className="text-ink-soft">Specific Capacity</span>
-              <span className="mono text-ink">{specific}</span>
-            </p>
-            <p className="flex items-baseline justify-between gap-4">
-              <span className="text-ink-soft">Fatigue Suppression</span>
-              <span className="mono text-ink">{suppression}</span>
-            </p>
-          </div>
-          <Dialog.Description className="mt-5 text-sm leading-6 text-ink-soft">
-            Readiness combines your aerobic and specific capacity, then accounts
-            for current fatigue and compares the result with your own history.
+          <Dialog.Title className="title text-[2rem] text-ink">{body}</Dialog.Title>
+          <Dialog.Description className="mt-4 text-sm leading-6 text-ink-soft">
+            {top
+              ? `${label} is at the top of this athlete's own historical 0–100 scale. The underlying work can still be rising; the displayed ruler is full.`
+              : `${label} is at the bottom of this athlete's own historical 0–100 scale. The underlying work can still be easing; the displayed ruler is empty.`}
           </Dialog.Description>
           <div className="mt-6 flex justify-end">
             <Dialog.Close asChild>
@@ -605,3 +525,4 @@ function PotentialWhy({
     </Dialog.Root>
   );
 }
+

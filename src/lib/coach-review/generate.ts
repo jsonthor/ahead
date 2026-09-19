@@ -59,9 +59,11 @@ function packetBrief(packet: ReviewPacket) {
           : packet.aerobicRawEnd < packet.aerobicRawStart
             ? "Falling"
             : "Stable",
+    performanceStart: packet.performanceStart.label,
+    performanceEnd: packet.performanceEnd.label,
+    performanceScore: packet.performanceEnd.score,
     directionStart: packet.directionStart.label,
     directionEnd: packet.directionEnd.label,
-    directionTrajectory: packet.directionEnd.trajectoryLabel,
     racesInBlock: packet.races.map(sessionBrief),
     raceCount: packet.races.length,
     upcomingRaces: packet.upcomingRaces.map(sessionBrief),
@@ -76,7 +78,7 @@ function packetBrief(packet: ReviewPacket) {
 
 const SYSTEM = `You are Ahead writing a monthly Coach Review. Do not fill a section merely because the schema contains it. Empty arrays and empty strings are allowed.
 
-Use Specific capacity, Aerobic capacity, and Direction as modeled metrics. A rise in Specific capacity is not performance evidence. Direction is the modeled development trajectory, not proof that load became more manageable. Do not assess starts, lap fade, technical execution, or race-execution quality. Missing results belong under unknown, not didnt. If nothing obviously went wrong, didnt is []. nextPriorities is always []. Immediate priority must be grounded, not slogans.
+Use Specific capacity, Aerobic capacity, and Performance as modeled metrics. A rise in Specific capacity is not race-performance evidence. Do not issue Direction as a second verdict. If the packet still has a Direction label, treat it as legacy and prefer Performance. Do not assess starts, lap fade, technical execution, or race-execution quality. Missing results belong under unknown, not didnt. If nothing obviously went wrong, didnt is []. nextPriorities is always []. Immediate priority must be grounded, not slogans.
 
 Return ONLY JSON with this shape:
 {

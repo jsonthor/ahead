@@ -129,8 +129,8 @@ export function composeCoachReview(input: {
   const { packet } = input;
   const specificTrend = trend(packet.specificRawStart, packet.specificRawEnd);
   const aerobicTrend = trend(packet.aerobicRawStart, packet.aerobicRawEnd);
-  const startLabel = packet.directionStart.label;
-  const endLabel = packet.directionEnd.label;
+  const startLabel = packet.performanceStart.label;
+  const endLabel = packet.performanceEnd.label;
   const now = new Date().toISOString();
   const raceNames = named(packet.races);
   const fitness =
@@ -149,8 +149,8 @@ export function composeCoachReview(input: {
     `Specific capacity ${specificTrend.toLowerCase()}`,
     `Aerobic capacity ${aerobicTrend.toLowerCase()}`,
     startLabel === endLabel
-      ? `Direction stayed ${endLabel}`
-      : `Direction moved from ${startLabel} to ${endLabel}`,
+      ? `Performance stayed ${endLabel}`
+      : `Performance moved from ${startLabel} to ${endLabel}`,
   ];
 
   const happened = [
@@ -235,7 +235,9 @@ export function composeCoachReview(input: {
     source: "compose",
     title: `${formatMonthName(packet.periodEnd)} Coach Review`,
     directionLabel: endLabel,
-    directionTrajectory: packet.directionEnd.trajectoryLabel,
+    directionTrajectory: packet.performanceEnd.score != null
+      ? `Performance ${packet.performanceEnd.score}`
+      : null,
     fitnessStart: packet.fitnessStart,
     fitnessEnd: packet.fitnessEnd,
     specificTrend,
@@ -293,8 +295,8 @@ export function composeWeeklyReview(input: {
   const { packet } = input;
   const specificTrend = trend(packet.specificRawStart, packet.specificRawEnd);
   const aerobicTrend = trend(packet.aerobicRawStart, packet.aerobicRawEnd);
-  const startLabel = packet.directionStart.label;
-  const endLabel = packet.directionEnd.label;
+  const startLabel = packet.performanceStart.label;
+  const endLabel = packet.performanceEnd.label;
   const now = new Date().toISOString();
   const raceNames = named(packet.races);
   const fitness =
@@ -313,8 +315,8 @@ export function composeWeeklyReview(input: {
     fitness,
     `Specific capacity ${specificTrend.toLowerCase()}. Aerobic capacity ${aerobicTrend.toLowerCase()}.`,
     startLabel === endLabel
-      ? `Direction stayed ${endLabel}.`
-      : `Direction moved from ${startLabel} to ${endLabel}.`,
+      ? `Performance stayed ${endLabel}.`
+      : `Performance moved from ${startLabel} to ${endLabel}.`,
   ]
     .filter(Boolean)
     .join(" ");
@@ -352,7 +354,9 @@ export function composeWeeklyReview(input: {
     source: "compose",
     title: `Week ending ${formatWeekdayDate(packet.periodEnd)}`,
     directionLabel: endLabel,
-    directionTrajectory: packet.directionEnd.trajectoryLabel,
+    directionTrajectory: packet.performanceEnd.score != null
+      ? `Performance ${packet.performanceEnd.score}`
+      : null,
     fitnessStart: packet.fitnessStart,
     fitnessEnd: packet.fitnessEnd,
     specificTrend,

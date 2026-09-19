@@ -53,7 +53,7 @@ export function CoachReviewDetail({ id }: { id: string }) {
       </p>
 
       <dl className="mt-8 grid gap-px overflow-hidden border border-line bg-line sm:grid-cols-2">
-        <Stat label="Direction" value={review.directionLabel} note={review.directionTrajectory} />
+        <Stat label="Performance" value={review.directionLabel} note={review.directionTrajectory} />
         <Stat label="Fitness" value={fitness} />
         <Stat label="Specific capacity" value={review.specificTrend} />
         <Stat label="Aerobic capacity" value={review.aerobicTrend} />

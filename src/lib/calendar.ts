@@ -43,6 +43,29 @@ export function weekKeys(mondayKey: string): string[] {
   return Array.from({ length: 7 }, (_, index) => addDaysToKey(mondayKey, index));
 }
 
+export function mondayOfKey(key: string): string {
+  return addDaysToKey(key, -weekdayIndexFromKey(key));
+}
+
+export function addMonthsToDayKey(key: string, delta: number): string {
+  const nextMonth = addMonthsToKey(key.slice(0, 7), delta);
+  const day = Number(key.slice(8));
+  const last = Number(lastDayOfMonth(nextMonth).slice(8));
+  return `${nextMonth}-${String(Math.min(day, last)).padStart(2, "0")}`;
+}
+
+export function gridQueryRange(keys: string[]): { from: string; to: string } {
+  const first = keys[0];
+  const last = keys[keys.length - 1];
+  if (!first || !last) {
+    return { from: "", to: "" };
+  }
+  return {
+    from: `${addDaysToKey(first, -1)}T00:00:00.000Z`,
+    to: `${addDaysToKey(last, 2)}T00:00:00.000Z`,
+  };
+}
+
 export function formatWeekRange(mondayKey: string): string {
   const endKey = addDaysToKey(mondayKey, 6);
   const start = formatUtcKey(mondayKey, { day: "numeric", month: "short" });
@@ -81,13 +104,7 @@ export function lastDayOfMonth(monthKey: string): string {
 }
 
 export function monthQueryRange(monthKey: string): { from: string; to: string } {
-  const keys = monthGridKeys(monthKey);
-  const first = keys[0] ?? `${monthKey}-01`;
-  const last = keys[keys.length - 1] ?? lastDayOfMonth(monthKey);
-  return {
-    from: `${addDaysToKey(first, -1)}T00:00:00.000Z`,
-    to: `${addDaysToKey(last, 2)}T00:00:00.000Z`,
-  };
+  return gridQueryRange(monthGridKeys(monthKey));
 }
 
 export function monthGridKeys(monthKey: string): string[] {

@@ -297,7 +297,7 @@ export function HistoryChart({
   }
 
   return (
-    <section className="mt-12">
+    <section id="performance-history" className="mt-12 scroll-mt-24">
       <figure className="rounded-2xl border border-line bg-paper-raised px-5 py-5 sm:px-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -306,7 +306,7 @@ export function HistoryChart({
             </p>
             <p className="mt-2 text-sm text-ink-soft">
               <span className="text-ink">{formatDayTitle(activePoint.date)}</span>
-              {" · "}Readiness {displayPotential(activePoint.potential)}
+              {" · "}Performance {displayPotential(activePoint.potential)}
               {" · "}Fitness {formatTrainingMetric(shown.fitness)}
               {" · "}Fatigue {formatTrainingMetric(shown.fatigue)}
               {" · "}Form {formatTrainingMetric(shown.form)}
@@ -330,12 +330,12 @@ export function HistoryChart({
           </div>
         </div>
 
-        <p className="mt-5 text-[13px] font-medium text-ink">Readiness</p>
+        <p className="mt-5 text-[13px] font-medium text-ink">Performance</p>
         <svg
           viewBox={`0 0 ${WIDTH} ${POTENTIAL_H}`}
           className="mt-1 block h-36 w-full cursor-crosshair sm:h-40"
           role="img"
-          aria-label="Readiness"
+          aria-label="Performance"
           onMouseMove={onMove}
           onMouseLeave={() => setHoverIndex(null)}
         >

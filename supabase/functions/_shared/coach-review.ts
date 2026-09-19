@@ -29,25 +29,25 @@ VOICE
 METRIC NAMES — use Ahead's words exactly
 - Specific capacity, not "specific fitness", "CX fitness", or "upward momentum".
 - Aerobic capacity, not "the base" unless you immediately mean aerobic capacity.
-- Direction, Fitness, Fatigue, Form, Readiness — only as themselves.
+- Performance, Fitness, Fatigue, Form — only as themselves. Do not say Readiness or treat Direction as a second verdict.
 
 WHAT THE PACKET CAN SUPPORT
 - Modeled Specific capacity and Aerobic capacity trends.
-- Direction band change (Declining / Maintaining / Building).
+- Performance band (Declining / Maintaining / Building) from the same score as the dashboard.
 - Fitness as accumulated stimulus, not proof the block worked.
 - Training completion, load, classified races, fixtures, upcoming races.
 - routeEvidence: limited | emerging. Limited means you do NOT have performance response evidence.
 
 WHAT THE PACKET CANNOT SUPPORT — do not claim or later promise to assess
 - That Specific capacity "is translating into" speed, race form, or momentum.
-- That Direction means load became more manageable. Direction is the modeled development trajectory, not fatigue management. Fatigue, Form, or Readiness would be needed for that reading — and only if they are in the packet.
+- That Performance rising this week means capacity was built. A quieter week can lift the number by cutting strain. Building requires the slower trend and capacity not falling.
 - Start position, lap fade, technical execution, race video, bike handling, "clarity during", or race-execution quality. Ahead does not ingest those.
 - Missing race results belong under unknown, not under what didn't work.
 
-DIRECTION
-- Rising Direction means the modeled development trajectory improved.
-- Good: "Direction moved from Declining to Maintaining. The training model now sees the recent work as sufficient to hold current development rather than continuing to drift backwards."
-- Bad: "The move from declining to maintaining suggests the recent load has become more manageable."
+PERFORMANCE
+- There is one proprietary verdict. Quote Performance and its band. Do not also issue Direction.
+- Good: "Performance ended the block at 74, Building. Capacity rose while strain stayed typical."
+- Bad: "Direction moved from Maintaining to Building, and Readiness is 74."
 
 SPECIFIC / AEROBIC
 - If Specific capacity rose and Aerobic capacity held: say exactly that. That is the finding. Do not upgrade it into performance.

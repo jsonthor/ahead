@@ -12,12 +12,8 @@ const items = [
     a: "It can, but it doesn’t have to. Ahead can work with an existing routine, club sessions, races, coach-prescribed workouts or whatever training you already do.",
   },
   {
-    q: "What is Direction?",
-    a: "Direction is a slow daily trajectory. The number stays hidden; you see the band it sits in — Building, Maintaining, or Declining. Stimulus, mix, and comparable performances move the line. Strain is the cost of that path, not a fourth band: you can be Building and under high strain. Confidence is separate, so Ahead can say Building with moderate confidence when the stimulus is there but performance evidence is still limited.",
-  },
-  {
-    q: "What is Readiness?",
-    a: "Readiness estimates how much of your built capacity is expressible today. It combines longer-term aerobic and race-specific work with the temporary effect of recent fatigue.",
+    q: "What is Performance?",
+    a: "Performance is Ahead's one headline. The number is how much of your built capacity is expressible today, relative to your own history. Building, Maintaining, or Declining is the slower trend of that same number — not a second verdict.",
   },
   {
     q: "Can Ahead change my calendar?",

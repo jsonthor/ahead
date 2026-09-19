@@ -155,7 +155,7 @@ export async function saveAthleteZones(input: {
       if (progress.phase === "daily") {
         await input.onProgress?.({
           phase: "daily",
-          message: "Updating Fitness, Fatigue, and Readiness…",
+          message: "Updating Fitness, Fatigue, and Performance…",
           processed: progress.processed,
           total: progress.total,
         });

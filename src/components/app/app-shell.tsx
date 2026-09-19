@@ -74,7 +74,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   const dashboardActive = pathname === "/app";
-  const calendarActive = pathname.startsWith("/app/calendar");
+  const activitiesActive =
+    pathname.startsWith("/app/activities") || pathname.startsWith("/app/calendar");
   const reviewsActive = pathname.startsWith("/app/reviews");
 
   return (
@@ -97,11 +98,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                 Dashboard
               </Link>
               <Link
-                href="/app/calendar"
-                className={navClass(calendarActive)}
-                aria-current={calendarActive ? "page" : undefined}
+                href="/app/activities"
+                className={navClass(activitiesActive)}
+                aria-current={activitiesActive ? "page" : undefined}
               >
-                Calendar
+                Activities
               </Link>
               <Link
                 href="/app/reviews"

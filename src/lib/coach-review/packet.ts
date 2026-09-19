@@ -17,6 +17,7 @@ import {
   type DirectionDay,
   isDirectionCalibration,
 } from "@/lib/load/direction";
+import { inferPerformance, type PerformanceReading } from "@/lib/load/performance";
 import { historyDays } from "@/lib/load/training-state";
 import { DAYS, summarize, type OnboardingAnswers } from "@/lib/onboarding";
 import { createClient as createBrowserClient } from "@/lib/supabase/client";
@@ -43,6 +44,8 @@ export type ReviewPacket = {
   specificRawEnd: number | null;
   directionStart: ReturnType<typeof inferDirection>;
   directionEnd: ReturnType<typeof inferDirection>;
+  performanceStart: PerformanceReading;
+  performanceEnd: PerformanceReading;
   races: ReviewSession[];
   upcomingRaces: ReviewSession[];
   fixtures: ReviewSession[];
@@ -238,6 +241,8 @@ export async function loadReviewPacket(input: {
     specificRawEnd: end?.specific_raw ?? end?.specific_capacity ?? null,
     directionStart: inferDirection(days, input.periodStart, routes, calibration),
     directionEnd: inferDirection(days, input.periodEnd, routes, calibration),
+    performanceStart: inferPerformance(days, input.periodStart),
+    performanceEnd: inferPerformance(days, input.periodEnd),
     races: uniqueRaces(inReview),
     upcomingRaces: uniqueRaces(upcoming),
     fixtures: dedupeFixtures([

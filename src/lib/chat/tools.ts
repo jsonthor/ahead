@@ -62,7 +62,7 @@ export const CHAT_TOOLS = [
   {
     name: "get_load_series",
     description:
-      "Daily load, Fitness, Fatigue, Form, and Readiness score (JSON field: potential) between two inclusive dates.",
+      "Daily load, Fitness, Fatigue, Form, and Performance score (JSON field: potential) between two inclusive dates.",
     input_schema: {
       type: "object",
       additionalProperties: false,

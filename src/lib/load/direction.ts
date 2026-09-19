@@ -1,5 +1,6 @@
 /**
- * Direction — adaptation trajectory over weeks.
+ * Direction — retired as a user-facing verdict. Kept for diagnostics
+ * and comparison against Performance. Do not show this to the athlete.
  *
  * Each day's raw score is rebuilt from that day's trailing window.
  * The displayed score is then EMA-smoothed forward, so it is path-dependent.

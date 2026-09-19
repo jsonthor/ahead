@@ -4,17 +4,20 @@ import { useAppUser } from "@/components/app/app-shell";
 import { EventDialog } from "@/components/app/event-dialog";
 import {
   addDaysToKey,
-  addMonthsToKey,
+  addMonthsToDayKey,
   dateKeyInZone,
   formatDayNumber,
   formatDayTitle,
   formatMonthTitle,
   formatTimeInZone,
+  formatWeekRange,
+  gridQueryRange,
   isSameMonth,
   isoWeekNumber,
+  mondayOfKey,
   monthGridKeys,
   monthKeyInZone,
-  monthQueryRange,
+  weekKeys,
 } from "@/lib/calendar";
 import {
   CALENDAR_CHANGED_EVENT,
@@ -90,6 +93,9 @@ const sportTone: Record<string, string> = {
 
 const VISIBLE = 3;
 const WELLNESS_KEY = "ahead-calendar-wellness";
+const VIEW_KEY = "ahead-activities-view";
+
+type GridView = "week" | "month";
 
 function navButtonClass(active = false) {
   return `inline-flex h-9 items-center px-3 text-sm ${
@@ -103,9 +109,8 @@ export function WeekCalendar() {
   const user = useAppUser();
   const router = useRouter();
   const pathname = usePathname();
-  const [month, setMonth] = useState(() =>
-    monthKeyInZone(new Date(), user.timezone),
-  );
+  const [view, setView] = useState<GridView>("month");
+  const [focus, setFocus] = useState(() => dateKeyInZone(new Date(), user.timezone));
   const [rows, setRows] = useState<ActivityRow[] | null>(null);
   const [events, setEvents] = useState<CalendarEvent[] | null>(null);
   const [loads, setLoads] = useState<DailyLoad[]>([]);
@@ -122,10 +127,23 @@ export function WeekCalendar() {
   const [selected, setSelected] = useState<string[]>([]);
   const todayKey = dateKeyInZone(new Date(), user.timezone);
   const thisMonth = monthKeyInZone(new Date(), user.timezone);
+  const thisWeekMonday = mondayOfKey(todayKey);
+  const month = focus.slice(0, 7);
+  const weekMonday = mondayOfKey(focus);
+  const keys = useMemo(
+    () => (view === "week" ? weekKeys(weekMonday) : monthGridKeys(month)),
+    [month, view, weekMonday],
+  );
+  const range = useMemo(() => gridQueryRange(keys), [keys]);
+  const rangeKey = keys.join();
 
   useEffect(() => {
     if (window.localStorage.getItem(WELLNESS_KEY) === "off") {
       setShowWellness(false);
+    }
+    const stored = window.localStorage.getItem(VIEW_KEY);
+    if (stored === "week" || stored === "month") {
+      setView(stored);
     }
   }, []);
 
@@ -140,8 +158,8 @@ export function WeekCalendar() {
 
   useEffect(() => {
     const supabase = createClient();
-    const range = monthQueryRange(month);
-    const keys = monthGridKeys(month);
+    const first = keys[0] ?? `${month}-01`;
+    const last = keys[keys.length - 1] ?? `${month}-28`;
     setRows(null);
     setEvents(null);
     void supabase
@@ -164,8 +182,8 @@ export function WeekCalendar() {
     void supabase
       .from("calendar_items")
       .select(CALENDAR_EVENT_COLUMNS)
-      .gte("date", keys[0] ?? `${month}-01`)
-      .lte("date", keys[keys.length - 1] ?? `${month}-28`)
+      .gte("date", first)
+      .lte("date", last)
       .order("date", { ascending: true })
       .then(({ data, error }) => {
         if (error) {
@@ -178,8 +196,8 @@ export function WeekCalendar() {
     void supabase
       .from("daily_loads")
       .select("date, training_load, fitness, fatigue, form")
-      .gte("date", addDaysToKey(keys[0] ?? `${month}-01`, -8))
-      .lte("date", keys[keys.length - 1] ?? `${month}-28`)
+      .gte("date", addDaysToKey(first, -8))
+      .lte("date", last)
       .order("date", { ascending: true })
       .then(({ data }) => {
         setLoads((data as DailyLoad[] | null) ?? []);
@@ -187,8 +205,8 @@ export function WeekCalendar() {
     void supabase
       .from("daily_recovery")
       .select("date, resting_hr, sleep_hrv_ms, sleep_minutes, sleep_score, stress_avg")
-      .gte("date", addDaysToKey(keys[0] ?? `${month}-01`, -28))
-      .lte("date", keys[keys.length - 1] ?? `${month}-28`)
+      .gte("date", addDaysToKey(first, -28))
+      .lte("date", last)
       .order("date", { ascending: true })
       .then(({ data, error }) => {
         if (error) {
@@ -198,7 +216,7 @@ export function WeekCalendar() {
         }
         setRecovery((data as RecoveryObservation[] | null) ?? []);
       });
-  }, [month, refresh]);
+  }, [keys, month, range.from, range.to, rangeKey, refresh]);
 
   useEffect(() => {
     function onChange() {
@@ -233,7 +251,6 @@ export function WeekCalendar() {
   }
 
   const days = useMemo(() => {
-    const keys = monthGridKeys(month);
     const activitiesByDay = new Map<string, ActivityRow[]>();
     const eventsByDay = new Map<string, CalendarEvent[]>();
     for (const key of keys) {
@@ -249,7 +266,7 @@ export function WeekCalendar() {
     }
     return keys.map((key) => ({
       key,
-      inMonth: isSameMonth(key, month),
+      inMonth: view === "week" || isSameMonth(key, month),
       items: activitiesByDay.get(key) ?? [],
       chips: dayChips(
         activitiesByDay.get(key) ?? [],
@@ -257,7 +274,7 @@ export function WeekCalendar() {
         previewForDay(key, preview),
       ),
     }));
-  }, [events, month, preview, rows, user.timezone]);
+  }, [events, keys, month, preview, rows, user.timezone, view]);
 
   const loadByDate = useMemo(() => {
     const map = new Map<string, DailyLoad>();
@@ -279,19 +296,49 @@ export function WeekCalendar() {
     (sum, day) => sum + (day.inMonth ? day.chips.length : 0),
     0,
   );
+  const onThisPeriod = view === "week" ? weekMonday === thisWeekMonday : month === thisMonth;
+
+  function chooseView(next: GridView) {
+    setView(next);
+    window.localStorage.setItem(VIEW_KEY, next);
+  }
 
   return (
     <section className={comparing ? "pb-20" : undefined}>
       <div className="grid items-end gap-4 sm:grid-cols-[1fr_auto_1fr]">
         <div>
           <p className="kicker">
-            {month === thisMonth ? "This month" : "Month"}
+            {view === "week"
+              ? weekMonday === thisWeekMonday
+                ? "This week"
+                : "Week"
+              : month === thisMonth
+                ? "This month"
+                : "Month"}
           </p>
           <h1 className="title mt-2 text-ink">
-            {formatMonthTitle(month)}
+            {view === "week" ? formatWeekRange(weekMonday) : formatMonthTitle(month)}
           </h1>
         </div>
         <div className="flex flex-wrap items-center justify-self-start gap-4 sm:justify-self-center">
+          <div className="flex overflow-hidden rounded-sm border border-line" role="group" aria-label="View">
+            <button
+              type="button"
+              aria-pressed={view === "week"}
+              onClick={() => chooseView("week")}
+              className={`${navButtonClass(view === "week")} border-r border-line`}
+            >
+              Week
+            </button>
+            <button
+              type="button"
+              aria-pressed={view === "month"}
+              onClick={() => chooseView("month")}
+              className={navButtonClass(view === "month")}
+            >
+              Month
+            </button>
+          </div>
           <WellnessSwitch
             on={showWellness}
             onChange={(next) => {
@@ -323,14 +370,22 @@ export function WeekCalendar() {
           <div className="flex overflow-hidden rounded-sm border border-line">
             <button
               type="button"
-              onClick={() => setMonth((value) => addMonthsToKey(value, -1))}
+              onClick={() =>
+                setFocus((value) =>
+                  view === "week" ? addDaysToKey(mondayOfKey(value), -7) : addMonthsToDayKey(value, -1),
+                )
+              }
               className={`${navButtonClass()} border-r border-line`}
             >
               Previous
             </button>
             <button
               type="button"
-              onClick={() => setMonth((value) => addMonthsToKey(value, 1))}
+              onClick={() =>
+                setFocus((value) =>
+                  view === "week" ? addDaysToKey(mondayOfKey(value), 7) : addMonthsToDayKey(value, 1),
+                )
+              }
               className={navButtonClass()}
             >
               Next
@@ -338,10 +393,10 @@ export function WeekCalendar() {
           </div>
           <button
             type="button"
-            onClick={() => setMonth(thisMonth)}
-            disabled={month === thisMonth}
+            onClick={() => setFocus(todayKey)}
+            disabled={onThisPeriod}
             className={`inline-flex h-9 items-center rounded-sm border border-line px-3 text-sm ${
-              month === thisMonth
+              onThisPeriod
                 ? "cursor-default text-muted"
                 : "text-ink hover:bg-paper-sunken"
             }`}
@@ -353,7 +408,7 @@ export function WeekCalendar() {
 
       {rows && events && eventCount === 0 ? (
         <p className="mt-4 text-sm text-muted">
-          Nothing planned or completed in this month.
+          Nothing planned or completed in this {view === "week" ? "week" : "month"}.
         </p>
       ) : null}
 
@@ -407,6 +462,7 @@ export function WeekCalendar() {
                   <MonthDay
                     key={day.key}
                     day={day}
+                    compact={view === "month"}
                     todayKey={todayKey}
                     timezone={user.timezone}
                     units={user.units}
@@ -452,7 +508,7 @@ export function WeekCalendar() {
           <div className="mx-auto flex max-w-[1360px] flex-wrap items-center gap-3">
             <p className="text-sm text-ink">
               {selected.length === 0
-                ? "Select completed sessions on the calendar."
+                ? "Select completed sessions."
                 : selected.length === 1
                   ? "1 selected · add at least one more."
                   : `${selected.length} selected`}
@@ -620,6 +676,7 @@ function WellnessSwitch({
 
 function MonthDay({
   day,
+  compact,
   todayKey,
   timezone,
   units,
@@ -635,6 +692,7 @@ function MonthDay({
   onDragSession,
 }: {
   day: { key: string; inMonth: boolean; items: ActivityRow[]; chips: DayChip[] };
+  compact: boolean;
   todayKey: string;
   timezone: string;
   units: Units;
@@ -650,8 +708,8 @@ function MonthDay({
   onDragSession: (id: string | null) => void;
 }) {
   const isToday = day.key === todayKey;
-  const extra = comparing ? 0 : Math.max(0, day.chips.length - VISIBLE);
-  const visible = comparing ? day.chips : day.chips.slice(0, VISIBLE);
+  const extra = compact && !comparing ? Math.max(0, day.chips.length - VISIBLE) : 0;
+  const visible = compact && !comparing ? day.chips.slice(0, VISIBLE) : day.chips;
   const canReceive = Boolean(draggingId) && day.key >= todayKey;
   const isDrop = canReceive && dropKey === day.key;
   const fromHere = draggingId
@@ -662,7 +720,13 @@ function MonthDay({
     <div
       data-calendar-day={day.key}
       className={`relative h-full min-w-0 overflow-hidden transition-colors duration-150 ${
-        showWellness ? "min-h-48" : "min-h-36"
+        compact
+          ? showWellness
+            ? "min-h-48"
+            : "min-h-36"
+          : showWellness
+            ? "min-h-[22rem]"
+            : "min-h-[18rem]"
       } ${
         isDrop
           ? "bg-forest/15 shadow-[inset_0_0_0_2px_var(--forest)]"

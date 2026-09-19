@@ -1,14 +1,19 @@
-import { WeekCalendar } from "@/components/app/week-calendar";
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Calendar — Ahead",
-};
-
-export default function CalendarPage() {
-  return (
-    <main className="mx-auto max-w-[1360px] px-4 py-12 sm:px-6 lg:px-8">
-      <WeekCalendar />
-    </main>
-  );
+export default async function CalendarRedirect({
+  searchParams,
+}: PageProps<"/app/calendar">) {
+  const params = await searchParams;
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        query.append(key, item);
+      }
+    } else if (value) {
+      query.set(key, value);
+    }
+  }
+  const suffix = query.toString();
+  redirect(suffix ? `/app/activities?${suffix}` : "/app/activities");
 }

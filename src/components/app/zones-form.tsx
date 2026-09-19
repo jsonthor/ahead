@@ -330,8 +330,8 @@ export function ZonesForm() {
       {sessionCount > 0 && modal === "closed" ? (
         <p className="text-[13px] leading-5 text-muted">
           Saving rewrites intensity on {sessionCount} session
-          {sessionCount === 1 ? "" : "s"} and then Fitness, Fatigue, Form, and
-          Readiness. Stay on this page — that usually takes{" "}
+          {sessionCount === 1 ? "" : "s"} and then           Fitness, Fatigue, Form, and
+          Performance. Stay on this page — that usually takes{" "}
           {formatDuration(estimateSeconds(sessionCount))}.
         </p>
       ) : null}
@@ -422,8 +422,8 @@ function ZoneSaveModal({
           </Dialog.Title>
           <Dialog.Description className="mt-3 text-sm leading-6 text-ink-soft">
             {done
-              ? "Session intensity, Fitness, Fatigue, Form, and Readiness have changed. Open the dashboard to see the new numbers."
-              : "Stay here until this finishes. Ahead is rewriting session intensity, then Fitness, Fatigue, Form, and Readiness will change."}
+              ? "Session intensity, Fitness, Fatigue, Form, and Performance have changed. Open the dashboard to see the new numbers."
+              : "Stay here until this finishes. Ahead is rewriting session intensity, then Fitness, Fatigue, Form, and Performance will change."}
           </Dialog.Description>
           {done ? null : (
             <div className="mt-5 space-y-3">

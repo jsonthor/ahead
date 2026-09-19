@@ -113,7 +113,7 @@ export function CoachReviewHome() {
               {formatDayRange(weekly.period.start, weekly.period.end)}
             </p>
             <p className="mt-2 text-sm text-ink-soft">
-              A short read of the last seven days. Load, Direction, and capacity
+              A short read of the last seven days. Load, Performance, and capacity
               — not a new block plan.
             </p>
             <button

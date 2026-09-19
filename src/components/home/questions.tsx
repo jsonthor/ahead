@@ -3,7 +3,7 @@ const questions = [
   "I’ve got three races in 14 days. What should I do between them?",
   "I can’t train Thursday. What should move?",
   "Is this training actually moving me forward?",
-  "Why is Fitness rising while Readiness is falling?",
+  "Why is Fitness rising while Performance is falling?",
   "Compare the four weeks before this race with the four weeks after.",
 ];
 

@@ -379,7 +379,7 @@ async function downloadCorosFit(input: {
     const session = await openCorosClient({
       origin: input.origin,
       athleteId: input.athleteId,
-      returnPath: `/app/calendar?activity=${input.activityId}`,
+      returnPath: `/app/activities?activity=${input.activityId}`,
     });
     if ("unauthorized" in session && session.unauthorized) {
       return { bytes: null, unauthorized: true };

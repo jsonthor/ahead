@@ -75,10 +75,16 @@ export function ThisWeekSummary() {
     hours += row.duration_seconds ?? 0;
     const metrics = metricsOf(row);
     load += metrics?.potential_load ?? 0;
-    easy += metrics?.training_mix?.easy_seconds ?? 0;
-    specific +=
+    const mixEasy = metrics?.training_mix?.easy_seconds ?? 0;
+    const mixSpecific =
       (metrics?.training_mix?.specific_seconds ?? 0) +
       (metrics?.training_mix?.high_seconds ?? 0);
+    const mixTotal = mixEasy + mixSpecific;
+    if (mixTotal > 0 && (row.duration_seconds ?? 0) > 0) {
+      const share = (row.duration_seconds ?? 0) / mixTotal;
+      easy += mixEasy * share;
+      specific += mixSpecific * share;
+    }
   }
 
   const stats = [
