@@ -201,7 +201,7 @@ export async function buildContextPacket(
           factor: row.factor,
           status: row.status,
         };
-      }),}
+      }),
     },
   };
 }
