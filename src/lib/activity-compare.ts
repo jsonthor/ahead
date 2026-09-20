@@ -3,6 +3,11 @@ import { ACTIVITY_PARAM, COMPARE_PARAM } from "@/lib/activity-modal";
 export { COMPARE_PARAM };
 export const COMPARE_MAX = 4;
 export const COMPARE_CLOSED_EVENT = "ahead:compare-closed";
+export const COMPARE_SELECTING_EVENT = "ahead:compare-selecting";
+
+export function notifyCompareSelecting(on: boolean) {
+  window.dispatchEvent(new CustomEvent<boolean>(COMPARE_SELECTING_EVENT, { detail: on }));
+}
 
 export function notifyCompareClosed() {
   window.dispatchEvent(new Event(COMPARE_CLOSED_EVENT));

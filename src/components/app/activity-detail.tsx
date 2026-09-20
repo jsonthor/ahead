@@ -27,7 +27,9 @@ import {
   unlinkActivityFromCalendar,
   type CalendarEvent,
 } from "@/lib/calendar-event";
+import { RACE_RESULT_PARAM } from "@/lib/activity-modal";
 import { createClient } from "@/lib/supabase/client";
+import { useSearchParams } from "next/navigation";
 import {
   formatDistance,
   formatDuration,
@@ -292,6 +294,7 @@ function ZoneBar({
 
 export function ActivityDetail({ id }: { id: string }) {
   const user = useAppUser();
+  const raceHint = useSearchParams().get(RACE_RESULT_PARAM) === "1";
   const [activity, setActivity] = useState<Activity | null | undefined>(undefined);
   const [event, setEvent] = useState<CalendarEvent | null | undefined>(undefined);
   const [stream, setStream] = useState<StreamPoint[]>([]);
@@ -328,9 +331,12 @@ export function ActivityDetail({ id }: { id: string }) {
       .select(CALENDAR_EVENT_COLUMNS)
       .eq("linked_activity_id", id)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         if (cancelled) {
           return;
+        }
+        if (error) {
+          console.error("Linked race load failed", error);
         }
         setEvent(data ? parseCalendarEvent(data) : null);
       });
@@ -459,6 +465,18 @@ export function ActivityDetail({ id }: { id: string }) {
         <Dialog.Description className="mt-2 text-[15px] text-ink-soft">
           {formatActivityWhen(activity.started_at, user.timezone)}
         </Dialog.Description>
+        {raceHint ||
+        isRaceSession({
+          intent: event?.intent,
+          sessionType: activity.session_type,
+        }) ? (
+          <div className="mt-6">
+            <RaceResultCard
+              activityId={activity.id}
+              calendarItemId={event?.id ?? null}
+            />
+          </div>
+        ) : null}
         {event ? (
           <button
             type="button"
@@ -484,18 +502,6 @@ export function ActivityDetail({ id }: { id: string }) {
                 ? "This wasn’t the race"
                 : "Unlink from the plan"}
           </button>
-        ) : null}
-        {event !== undefined &&
-        isRaceSession({
-          intent: event?.intent,
-          sessionType: activity.session_type,
-        }) ? (
-          <div className="mt-6">
-            <RaceResultCard
-              activityId={activity.id}
-              calendarItemId={event?.id ?? null}
-            />
-          </div>
         ) : null}
         {event !== undefined ? (
           <div className="mt-6">

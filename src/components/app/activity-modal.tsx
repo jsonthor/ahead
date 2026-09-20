@@ -3,15 +3,26 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { ActivityDetail } from "@/components/app/activity-detail";
 import { ACTIVITY_PARAM, stripActivityParam } from "@/lib/activity-modal";
+import { COMPARE_SELECTING_EVENT } from "@/lib/activity-compare";
 import { keepAskAhead } from "@/lib/chat/ask-layer";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export function ActivityModal() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const id = searchParams.get(ACTIVITY_PARAM);
-  const open = Boolean(id);
+  const [selecting, setSelecting] = useState(false);
+  const open = Boolean(id) && !selecting;
+
+  useEffect(() => {
+    function onSelecting(event: Event) {
+      setSelecting(Boolean((event as CustomEvent<boolean>).detail));
+    }
+    window.addEventListener(COMPARE_SELECTING_EVENT, onSelecting);
+    return () => window.removeEventListener(COMPARE_SELECTING_EVENT, onSelecting);
+  }, []);
 
   function close() {
     router.push(stripActivityParam(pathname, searchParams.toString()), {

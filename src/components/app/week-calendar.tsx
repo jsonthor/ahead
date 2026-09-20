@@ -45,15 +45,16 @@ import {
   type RecoveryObservation,
 } from "@/lib/recovery";
 import { formatDistance, formatDuration, formatElevation, type Units } from "@/lib/units";
-import { ACTIVITY_PARAM } from "@/lib/activity-modal";
+import { ACTIVITY_PARAM, RACE_RESULT_PARAM, stripActivityParam } from "@/lib/activity-modal";
+import { formatRaceResult, type RaceStatus } from "@/lib/race-result/types";
 import {
   COMPARE_CLOSED_EVENT,
   COMPARE_MAX,
   COMPARE_PARAM,
   COMPARE_TONES,
+  notifyCompareSelecting,
   toggleCompareId,
 } from "@/lib/activity-compare";
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -77,6 +78,14 @@ type DailyLoad = {
   fitness: number | null;
   fatigue: number | null;
   form: number | null;
+};
+
+type RaceResultChip = {
+  activityId: string | null;
+  calendarItemId: string | null;
+  place: number | null;
+  fieldSize: number | null;
+  status: RaceStatus;
 };
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -115,6 +124,7 @@ export function WeekCalendar() {
   const [focus, setFocus] = useState(() => dateKeyInZone(new Date(), user.timezone));
   const [rows, setRows] = useState<ActivityRow[] | null>(null);
   const [events, setEvents] = useState<CalendarEvent[] | null>(null);
+  const [raceResults, setRaceResults] = useState<RaceResultChip[]>([]);
   const [loads, setLoads] = useState<DailyLoad[]>([]);
   const [recovery, setRecovery] = useState<RecoveryObservation[]>([]);
   const [showWellness, setShowWellness] = useState(true);
@@ -155,9 +165,13 @@ export function WeekCalendar() {
     function onClosed() {
       setComparing(false);
       setSelected([]);
+      notifyCompareSelecting(false);
     }
     window.addEventListener(COMPARE_CLOSED_EVENT, onClosed);
-    return () => window.removeEventListener(COMPARE_CLOSED_EVENT, onClosed);
+    return () => {
+      window.removeEventListener(COMPARE_CLOSED_EVENT, onClosed);
+      notifyCompareSelecting(false);
+    };
   }, []);
 
   useEffect(() => {
@@ -166,6 +180,7 @@ export function WeekCalendar() {
     const last = keys[keys.length - 1] ?? `${month}-28`;
     setRows(null);
     setEvents(null);
+    setRaceResults([]);
     void supabase
       .from("activities")
       .select(
@@ -196,6 +211,25 @@ export function WeekCalendar() {
           return;
         }
         setEvents((data ?? []).map(parseCalendarEvent));
+      });
+    void supabase
+      .from("race_results")
+      .select("activity_id, calendar_item_id, place, field_size, status")
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Calendar race results failed", error);
+          setRaceResults([]);
+          return;
+        }
+        setRaceResults(
+          (data ?? []).map((row) => ({
+            activityId: row.activity_id,
+            calendarItemId: row.calendar_item_id,
+            place: row.place,
+            fieldSize: row.field_size,
+            status: row.status as RaceStatus,
+          })),
+        );
       });
     void supabase
       .from("daily_loads")
@@ -308,9 +342,10 @@ export function WeekCalendar() {
         activitiesByDay.get(key) ?? [],
         eventsByDay.get(key) ?? [],
         previewForDay(key, preview),
+        raceResults,
       ),
     }));
-  }, [events, keys, month, preview, rows, user.timezone, view]);
+  }, [events, keys, month, preview, raceResults, rows, user.timezone, view]);
 
   const loadByDate = useMemo(() => {
     const map = new Map<string, DailyLoad>();
@@ -386,12 +421,21 @@ export function WeekCalendar() {
             type="button"
             aria-pressed={comparing}
             onClick={() => {
-              setComparing((on) => {
-                if (on) {
-                  setSelected([]);
-                }
-                return !on;
-              });
+              if (comparing) {
+                setSelected([]);
+                notifyCompareSelecting(false);
+                setComparing(false);
+                return;
+              }
+              setDraft(null);
+              notifyCompareSelecting(true);
+              setComparing(true);
+              const search = window.location.search.slice(1);
+              if (new URLSearchParams(search).get(ACTIVITY_PARAM)) {
+                router.replace(stripActivityParam(pathname, search), {
+                  scroll: false,
+                });
+              }
             }}
             className={`inline-flex h-9 items-center rounded-sm border px-3 text-sm ${
               comparing
@@ -544,7 +588,7 @@ export function WeekCalendar() {
         </div>
       </div>
       <EventDialog
-        draft={draft}
+        draft={comparing ? null : draft}
         onClose={() => setDraft(null)}
         onSaved={() => {
           setDraft(null);
@@ -592,7 +636,13 @@ export function WeekCalendar() {
 }
 
 type DayChip =
-  | { kind: "done"; id: string; activity: ActivityRow; event: CalendarEvent | null }
+  | {
+      kind: "done";
+      id: string;
+      activity: ActivityRow;
+      event: CalendarEvent | null;
+      result: RaceResultChip | null;
+    }
   | { kind: "planned"; id: string; event: CalendarEvent; removing?: boolean }
   | {
       kind: "ghost";
@@ -639,6 +689,7 @@ function dayChips(
   activities: ActivityRow[],
   events: CalendarEvent[],
   preview: { departing: Set<string>; ghosts: Extract<DayChip, { kind: "ghost" }>[] },
+  results: RaceResultChip[],
 ): DayChip[] {
   const byActivity = new Map<string, CalendarEvent>();
   const planned: CalendarEvent[] = [];
@@ -651,12 +702,21 @@ function dayChips(
   }
   return [
     ...preview.ghosts,
-    ...activities.map((activity) => ({
-      kind: "done" as const,
-      id: activity.id,
-      activity,
-      event: byActivity.get(activity.id) ?? null,
-    })),
+    ...activities.map((activity) => {
+      const event = byActivity.get(activity.id) ?? null;
+      return {
+        kind: "done" as const,
+        id: activity.id,
+        activity,
+        event,
+        result:
+          results.find(
+            (row) =>
+              row.activityId === activity.id ||
+              (event && row.calendarItemId === event.id),
+          ) ?? null,
+      };
+    }),
     ...planned.map((event) => ({
       kind: "planned" as const,
       id: event.id,
@@ -806,6 +866,7 @@ function MonthDay({
                 <DoneChip
                   activity={chip.activity}
                   event={chip.event}
+                  result={chip.result}
                   timezone={timezone}
                   units={units}
                   comparing={comparing}
@@ -827,7 +888,8 @@ function MonthDay({
                   event={chip.event}
                   removing={chip.removing}
                   units={units}
-                  movable={chip.event.date >= todayKey}
+                  movable={!comparing && chip.event.date >= todayKey}
+                  comparing={comparing}
                   dragging={draggingId === chip.event.id}
                   onEdit={onEdit}
                   onDragSession={onDragSession}
@@ -874,6 +936,7 @@ function loadLabel(value: number | null | undefined) {
 function DoneChip({
   activity,
   event,
+  result,
   timezone,
   units,
   comparing,
@@ -883,6 +946,7 @@ function DoneChip({
 }: {
   activity: ActivityRow;
   event: CalendarEvent | null;
+  result: RaceResultChip | null;
   timezone: string;
   units: Units;
   comparing: boolean;
@@ -890,6 +954,8 @@ function DoneChip({
   selectDisabled: boolean;
   onToggleSelect: () => void;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const race = event?.intent === "race";
   const title = event?.title?.trim() || null;
   const stats = joinStats([
@@ -900,45 +966,55 @@ function DoneChip({
   const fallback = formatTimeInZone(activity.started_at, timezone);
   const selected = selectedIndex >= 0;
   const tone = COMPARE_TONES[selectedIndex] ?? COMPARE_TONES[0];
-  const body = (
-    <>
+  const raceLine = race
+    ? result
+      ? formatRaceResult(result)
+      : "How did it go?"
+    : null;
+  return (
+    <button
+      type="button"
+      aria-pressed={comparing ? selected : undefined}
+      disabled={comparing && selectDisabled && !selected}
+      onClick={(click) => {
+        click.preventDefault();
+        click.stopPropagation();
+        if (comparing) {
+          onToggleSelect();
+          return;
+        }
+        router.push(
+          `${pathname}?${ACTIVITY_PARAM}=${activity.id}${race ? `&${RACE_RESULT_PARAM}=1` : ""}`,
+          { scroll: false },
+        );
+      }}
+      className={`pointer-events-auto block w-full min-w-0 max-w-full overflow-hidden rounded-sm border px-2 py-1.5 text-left ${
+        comparing && selected
+          ? `${tone.ring} bg-paper-sunken`
+          : comparing && selectDisabled
+            ? "cursor-default border-line bg-paper opacity-50"
+            : "border-line bg-paper hover:border-ink/25 hover:bg-paper-sunken"
+      }`}
+    >
       <p
         className={`mono text-[9px] font-bold tracking-[0.14em] uppercase ${
-          selected ? tone.text : race ? "text-ember" : sportTone[activity.sport] ?? "text-rest"
+          comparing && selected
+            ? tone.text
+            : race
+              ? "text-ember"
+              : sportTone[activity.sport] ?? "text-rest"
         }`}
       >
         {race ? (event?.importance ? `${event.importance} race` : "Race") : activity.sport}
       </p>
       {title ? <p className="truncate text-[12px] text-ink">{title}</p> : null}
       <p className="truncate text-[12px] text-ink">{stats || fallback}</p>
-    </>
-  );
-  if (comparing) {
-    return (
-      <button
-        type="button"
-        aria-pressed={selected}
-        onClick={onToggleSelect}
-        className={`block w-full min-w-0 max-w-full overflow-hidden rounded-sm border px-2 py-1.5 text-left ${
-          selected
-            ? `${tone.ring} bg-paper-sunken`
-            : selectDisabled
-              ? "cursor-default border-line bg-paper opacity-50"
-              : "border-line bg-paper hover:border-ink/25 hover:bg-paper-sunken"
-        }`}
-      >
-        {body}
-      </button>
-    );
-  }
-  return (
-    <Link
-      href={`?${ACTIVITY_PARAM}=${activity.id}`}
-      scroll={false}
-      className="block min-w-0 max-w-full overflow-hidden rounded-sm border border-line bg-paper px-2 py-1.5 hover:border-ink/25 hover:bg-paper-sunken"
-    >
-      {body}
-    </Link>
+      {raceLine ? (
+        <p className={`truncate text-[12px] ${result ? "text-ink" : "text-ember"}`}>
+          {raceLine}
+        </p>
+      ) : null}
+    </button>
   );
 }
 
@@ -947,6 +1023,7 @@ function PlannedChip({
   removing,
   units,
   movable,
+  comparing,
   dragging,
   onEdit,
   onDragSession,
@@ -955,6 +1032,7 @@ function PlannedChip({
   removing?: boolean;
   units: Units;
   movable: boolean;
+  comparing: boolean;
   dragging: boolean;
   onEdit: (event: CalendarEvent) => void;
   onDragSession: (id: string | null) => void;
@@ -989,21 +1067,22 @@ function PlannedChip({
         }, 0);
       }}
       onClick={() => {
-        if (!dragged.current) {
-          onEdit(event);
+        if (comparing || dragged.current) {
+          return;
         }
+        onEdit(event);
       }}
-      className={`block w-full min-w-0 max-w-full overflow-hidden rounded-sm border px-2 py-1.5 text-left ${
-        movable ? "cursor-grab active:cursor-grabbing border-dashed" : ""
+      className={`pointer-events-auto block w-full min-w-0 max-w-full overflow-hidden rounded-sm border px-2 py-1.5 text-left ${
+        comparing ? "cursor-default opacity-50" : movable ? "cursor-grab active:cursor-grabbing" : ""
       } ${
-        removing || dragging
-          ? "border-line bg-paper opacity-50"
+        comparing || removing || dragging
+          ? "border-line bg-paper"
           : logged
             ? "border-line bg-paper hover:border-ink/25 hover:bg-paper-sunken"
             : rest
               ? "border-dashed border-line bg-paper hover:bg-paper-sunken"
               : "border-dashed border-forest bg-paper hover:border-forest-hover hover:bg-paper-sunken"
-      }`}
+      } ${!comparing && movable ? "border-dashed" : ""}`}
     >
       <p
         className={`mono text-[9px] font-bold tracking-[0.14em] uppercase ${

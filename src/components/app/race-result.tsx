@@ -2,6 +2,7 @@
 
 import { Field, inputClassName } from "@/components/auth/field";
 import { useAppUser } from "@/components/app/app-shell";
+import { notifyCalendarChanged } from "@/lib/calendar-event";
 import {
   loadRaceResult,
   saveRaceResult,
@@ -49,8 +50,8 @@ export function RaceResultCard({
   calendarItemId: string | null;
 }) {
   const user = useAppUser();
-  const [result, setResult] = useState<RaceResult | null | undefined>(undefined);
-  const [editing, setEditing] = useState(false);
+  const [result, setResult] = useState<RaceResult | null>(null);
+  const [editing, setEditing] = useState(true);
   const [place, setPlace] = useState("");
   const [fieldSize, setFieldSize] = useState("");
   const [category, setCategory] = useState("");
@@ -63,19 +64,27 @@ export function RaceResultCard({
 
   useEffect(() => {
     let cancelled = false;
-    void loadRaceResult({ activityId, calendarItemId }).then((next) => {
-      if (cancelled) {
-        return;
-      }
-      setResult(next);
-      setOpenRaceResult(next);
-      if (next) {
-        applyResult(next);
-        setEditing(false);
-      } else {
+    void loadRaceResult({ activityId, calendarItemId })
+      .then((next) => {
+        if (cancelled) {
+          return;
+        }
+        setResult(next);
+        setOpenRaceResult(next);
+        if (next) {
+          applyResult(next);
+          setEditing(false);
+        } else {
+          setEditing(true);
+        }
+      })
+      .catch((caught) => {
+        if (cancelled) {
+          return;
+        }
+        console.error("Load race result failed", caught);
         setEditing(true);
-      }
-    });
+      });
     return () => {
       cancelled = true;
       setOpenRaceResult(null);
@@ -111,15 +120,12 @@ export function RaceResultCard({
       setResult(next);
       setOpenRaceResult(next);
       setEditing(false);
+      notifyCalendarChanged();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not save the race result.");
     } finally {
       setSaving(false);
     }
-  }
-
-  if (result === undefined) {
-    return null;
   }
 
   if (result && !editing) {
@@ -135,7 +141,7 @@ export function RaceResultCard({
     ].filter(Boolean);
 
     return (
-      <section className="border border-line bg-paper-raised px-5 py-5">
+      <section>
         <p className="kicker">Race result</p>
         <p className="mt-3 text-[1.65rem] leading-none tracking-[-0.04em] text-ink">
           {formatRaceResult(result)}
@@ -155,7 +161,7 @@ export function RaceResultCard({
   }
 
   return (
-    <section className="border border-line bg-paper-raised px-5 py-5">
+    <section>
       <p className="kicker">Race result</p>
       <h2 className="mt-3 text-[1.35rem] tracking-[-0.03em] text-ink">How did it go?</h2>
       <p className="mt-2 text-[14px] leading-6 text-ink-soft">
