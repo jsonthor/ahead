@@ -148,6 +148,32 @@ export function rangeFavorable(status: RangeStatus, better: "higher" | "lower") 
   );
 }
 
+export type RecoverySeriesPoint = {
+  date: string;
+  value: number;
+  range: RecoveryRange | null;
+};
+
+export function recoverySeries(
+  rows: RecoveryObservation[],
+  read: (row: RecoveryObservation) => number | null,
+  minSpan: number,
+): RecoverySeriesPoint[] {
+  return rows.flatMap((row) => {
+    const value = read(row);
+    if (value == null) {
+      return [];
+    }
+    return [
+      {
+        date: row.date,
+        value,
+        range: recoveryRange(rows, row.date, read, value, minSpan),
+      },
+    ];
+  });
+}
+
 export function hasRecoverySignal(row: RecoveryObservation) {
   return (
     overnightSleepMinutes(row.sleep_minutes) != null ||

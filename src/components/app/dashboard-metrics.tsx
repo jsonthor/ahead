@@ -31,6 +31,7 @@ import {
   historyDays,
   isEstablishing,
 } from "@/lib/load/training-state";
+import { RecoveryChartDialog, type RecoveryChartMetric } from "@/components/app/recovery-chart";
 import { recoverySourceLabel } from "@/lib/recovery/priority";
 import {
   formatHrv,
@@ -172,7 +173,7 @@ export function DashboardMetrics() {
       .select("date, resting_hr, sleep_hrv_ms, sleep_minutes, sleep_score, stress_avg, sleep_source, hrv_source, resting_hr_source")
       .lte("date", today)
       .order("date", { ascending: true })
-      .limit(400)
+      .limit(1000)
       .then(({ data, error }) => {
         if (error) {
           console.error("Dashboard recovery failed", error);
@@ -389,13 +390,21 @@ function RecoveryTonight({
   rows: RecoveryObservation[];
   today: string;
 }) {
+  const [chart, setChart] = useState<RecoveryChartMetric | null>(null);
   const latest = [...rows].reverse().find((row) => row.date <= today && hasRecoverySignal(row));
   if (!latest) {
     return null;
   }
   const night = latest.date === today ? "Last night" : formatDayShort(latest.date);
   const sleepMinutes = overnightSleepMinutes(latest.sleep_minutes);
-  const cards = [
+  const cards: Array<{
+    id: RecoveryChartMetric;
+    label: string;
+    value: string;
+    note: string | null;
+    better: "higher" | "lower";
+    range: ReturnType<typeof recoveryRange>;
+  }> = [
     {
       id: "sleep",
       label: "Sleep",
@@ -421,7 +430,7 @@ function RecoveryTonight({
       range: recoveryRange(rows, latest.date, (row) => row.sleep_hrv_ms, latest.sleep_hrv_ms, 6),
     },
     {
-      id: "rhr",
+      id: "rhr" as const,
       label: "Resting HR",
       value: formatRestingHr(latest.resting_hr) ?? "—",
       note: latest.resting_hr_source ? recoverySourceLabel(latest.resting_hr_source) : null,
@@ -441,11 +450,17 @@ function RecoveryTonight({
   return (
     <section className="mt-12">
       <p className="kicker">{night}</p>
-      <dl className="mt-3 grid gap-px overflow-hidden border border-line bg-line sm:grid-cols-4">
+      <div className="mt-3 grid gap-px overflow-hidden border border-line bg-line sm:grid-cols-4">
         {cards.map((card) => (
-          <div key={card.id} className="bg-paper-raised px-5 py-5">
-            <dt className="kicker">{card.label}</dt>
-            <dd className="metric mt-2 text-[2rem] text-ink">{card.value}</dd>
+          <button
+            key={card.id}
+            type="button"
+            onClick={() => setChart(card.id)}
+            className="bg-paper-raised px-5 py-5 text-left transition-colors hover:bg-paper-sunken"
+            aria-label={`${card.label} history`}
+          >
+            <p className="kicker">{card.label}</p>
+            <p className="metric mt-2 text-[2rem] text-ink">{card.value}</p>
             {card.range || card.note ? (
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <RangePill
@@ -456,9 +471,22 @@ function RecoveryTonight({
                 {card.note ? <p className="text-sm text-ink-soft">{card.note}</p> : null}
               </div>
             ) : null}
-          </div>
+          </button>
         ))}
-      </dl>
+      </div>
+      {chart ? (
+        <RecoveryChartDialog
+          metric={chart}
+          rows={rows}
+          today={today}
+          open
+          onOpenChange={(next) => {
+            if (!next) {
+              setChart(null);
+            }
+          }}
+        />
+      ) : null}
     </section>
   );
 }
