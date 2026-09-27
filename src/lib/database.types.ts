@@ -13,6 +13,7 @@ type ProfileRow = {
   units: "metric" | "imperial";
   date_of_birth: string | null;
   onboarding: Json | null;
+  recovery_source_preference: Json;
   potential_calibration: Json | null;
   assistant_memory: Json | null;
   hr_zone_notices: Json;
@@ -119,6 +120,29 @@ type DailyRecoveryRow = {
   sleep_minutes: number | null;
   sleep_score: number | null;
   stress_avg: number | null;
+  coverage: string;
+  sleep_source: string | null;
+  hrv_source: string | null;
+  resting_hr_source: string | null;
+  respiratory_rate: number | null;
+  spo2_pct: number | null;
+  sleep_temperature_c: number | null;
+  sleep_temperature_baseline_c: number | null;
+  sleep_temperature_delta_c: number | null;
+  sleep_start: string | null;
+  sleep_end: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type RecoveryObservationRow = {
+  id: string;
+  athlete_id: string;
+  date: string;
+  source: string;
+  payload: Json;
+  coverage: string;
+  retrieved_at: string;
   created_at: string;
   updated_at: string;
 };
@@ -354,6 +378,7 @@ export type Database = {
           units?: "metric" | "imperial";
           date_of_birth?: string | null;
           onboarding?: Json | null;
+          recovery_source_preference?: Json;
           potential_calibration?: Json | null;
           assistant_memory?: Json | null;
           hr_zone_notices?: Json;
@@ -623,10 +648,37 @@ export type Database = {
           sleep_minutes?: number | null;
           sleep_score?: number | null;
           stress_avg?: number | null;
+          coverage?: string;
+          sleep_source?: string | null;
+          hrv_source?: string | null;
+          resting_hr_source?: string | null;
+          respiratory_rate?: number | null;
+          spo2_pct?: number | null;
+          sleep_temperature_c?: number | null;
+          sleep_temperature_baseline_c?: number | null;
+          sleep_temperature_delta_c?: number | null;
+          sleep_start?: string | null;
+          sleep_end?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Update: Partial<DailyRecoveryRow>;
+        Relationships: [];
+      };
+      recovery_observations: {
+        Row: RecoveryObservationRow;
+        Insert: {
+          id?: string;
+          athlete_id: string;
+          date: string;
+          source: string;
+          payload?: Json;
+          coverage?: string;
+          retrieved_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<RecoveryObservationRow>;
         Relationships: [];
       };
       calendar_items: {

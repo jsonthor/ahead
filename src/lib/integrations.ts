@@ -18,15 +18,22 @@
  * workouts back to Garmin / COROS / Amazfit in this architecture.
  */
 
-import { isIntelligenceSource, type ActivitySource } from "@/lib/activity-source";
+import { type ActivitySource } from "@/lib/activity-source";
 import { createClient } from "@/lib/supabase/client";
 
-export type ProviderId = Extract<
+export type TrainingProviderId = Extract<
   ActivitySource,
   "fit" | "garmin" | "coros" | "polar" | "strava" | "apple" | "wahoo" | "suunto"
 >;
 
-export type ProviderGroup = "primary" | "optional" | "later";
+export type ProviderId = TrainingProviderId | "google_health";
+
+export type ProviderGroup = "primary" | "recovery" | "optional" | "later";
+
+export type ProviderCapabilities = {
+  activities: boolean;
+  recovery: boolean;
+};
 
 export type Provider = {
   id: ProviderId;
@@ -35,6 +42,7 @@ export type Provider = {
   kind: "oauth" | "file";
   intelligence: boolean;
   live: boolean;
+  capabilities: ProviderCapabilities;
   title: string;
   body: string;
   route: string;
@@ -49,6 +57,7 @@ export const PROVIDERS: Provider[] = [
     kind: "oauth",
     intelligence: true,
     live: true,
+    capabilities: { activities: true, recovery: true },
     title: "COROS MCP",
     body: "Athlete OAuth into COROS MCP. Potential pulls completed workouts and builds its own activity record.",
     route: "COROS MCP",
@@ -60,6 +69,7 @@ export const PROVIDERS: Provider[] = [
     kind: "file",
     intelligence: true,
     live: true,
+    capabilities: { activities: true, recovery: false },
     title: "Upload files you own",
     body: "FIT, GPX, TCX, or a zip of those files from any watch. Same canonical activity as a vendor pull.",
     route: "File upload",
@@ -71,6 +81,7 @@ export const PROVIDERS: Provider[] = [
     kind: "oauth",
     intelligence: true,
     live: false,
+    capabilities: { activities: true, recovery: true },
     title: "Garmin Connect Activity API",
     body: "Watch or Edge syncs to Garmin Connect; Potential pulls the activity and the FIT file. Apply to the developer program early — no Connect IQ app.",
     route: "Garmin Connect Activity API",
@@ -82,6 +93,7 @@ export const PROVIDERS: Provider[] = [
     kind: "oauth",
     intelligence: true,
     live: false,
+    capabilities: { activities: true, recovery: true },
     title: "AccessLink",
     body: "OAuth2 training sessions: duration, distance, HR, laps, zones, samples. Polar’s numbers stay metadata; Potential calculates load.",
     route: "Polar AccessLink",
@@ -93,6 +105,7 @@ export const PROVIDERS: Provider[] = [
     kind: "oauth",
     intelligence: false,
     live: false,
+    capabilities: { activities: false, recovery: false },
     title: "Optional overlay",
     body: "Technically an activity API. Policy forbids using that data to operate an AI app or for analytics. Not a Potential intelligence source.",
     route: "Strava API",
@@ -106,6 +119,7 @@ export const PROVIDERS: Provider[] = [
     kind: "oauth",
     intelligence: true,
     live: false,
+    capabilities: { activities: true, recovery: true },
     title: "HealthKit via iPhone app",
     body: "Needs a Potential iPhone app. Also the realistic path for Amazfit/Zepp, which can sync into Apple Health and has no public cloud activity API.",
     route: "HealthKit",
@@ -117,6 +131,7 @@ export const PROVIDERS: Provider[] = [
     kind: "oauth",
     intelligence: true,
     live: false,
+    capabilities: { activities: true, recovery: true },
     title: "Wahoo Cloud",
     body: "Partner approval. Inbound activities when we need head-unit coverage beyond Garmin.",
     route: "Wahoo Cloud API",
@@ -128,9 +143,22 @@ export const PROVIDERS: Provider[] = [
     kind: "oauth",
     intelligence: true,
     live: false,
+    capabilities: { activities: true, recovery: true },
     title: "Suunto",
     body: "More ingest later if athletes ask.",
     route: "Suunto Cloud",
+  },
+  {
+    id: "google_health",
+    name: "Google Health",
+    group: "recovery",
+    kind: "oauth",
+    intelligence: true,
+    live: true,
+    capabilities: { activities: false, recovery: true },
+    title: "Google Health API",
+    body: "Sleep and recovery from compatible Pixel Watch and Fitbit devices. Ahead will not import workouts or activity history.",
+    route: "Google Health API v4",
   },
 ];
 
@@ -285,6 +313,6 @@ export function hasIntelligenceHistory(state: IntegrationState): boolean {
   }
   return state.connections.some((connection) => {
     const provider = PROVIDERS.find((entry) => entry.id === connection.provider);
-    return provider?.intelligence && isIntelligenceSource(connection.provider);
+    return Boolean(provider?.capabilities.activities && provider.intelligence);
   });
 }

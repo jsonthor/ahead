@@ -14,8 +14,8 @@ export default function ConnectPage() {
         Whose data should Ahead learn from?
       </h1>
       <p className="lede mt-3 max-w-xl">
-        COROS and file upload are live. Garmin, Polar, and the rest are
-        coming soon.
+        COROS and file upload are live for training. Google Health is live
+        for sleep and overnight recovery only.
       </p>
       <div className="mt-8">
         <Suspense fallback={<div className="text-sm text-muted">Loading…</div>}>

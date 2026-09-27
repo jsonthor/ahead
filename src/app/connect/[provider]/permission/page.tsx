@@ -26,12 +26,14 @@ export default async function PermissionPage({
         <p className="text-sm font-medium text-ink">{brand.name}</p>
       </div>
       <h1 className="title mt-6 text-ink">
-        Allow Ahead to read your completed training?
+        {brand.capabilities.activities
+          ? "Allow Ahead to read your completed training?"
+          : "Allow Ahead to read overnight recovery?"}
       </h1>
       <p className="lede mt-3">
-        {brand.name} will share completed workouts with Ahead so it can
-        build its own activity record. Ahead will not send workouts back
-        to {brand.name}.
+        {brand.capabilities.activities
+          ? `${brand.name} will share completed workouts with Ahead so it can build its own activity record. Ahead will not send workouts back to ${brand.name}.`
+          : `${brand.name} will share sleep, HRV, resting heart rate, and supported overnight vitals. Ahead will not import workouts or activity history.`}
       </p>
       <div className="mt-8 grid gap-2">
         <Link

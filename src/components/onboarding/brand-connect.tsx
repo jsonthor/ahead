@@ -5,11 +5,13 @@ import {
   disconnectIntegration,
   isConnected,
   loadIntegrations,
+  PROVIDERS,
   providersIn,
   type Connection,
   type IntegrationState,
   type Provider,
 } from "@/lib/integrations";
+import { RecoveryPriority } from "@/components/app/recovery-priority";
 import { readImportProgress, type ImportProgress } from "@/lib/coros/progress";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -37,6 +39,15 @@ export function BrandConnect({ onLeave, returnTo = "/onboarding" }: Props) {
 
   const primary = providersIn("primary");
   const optional = providersIn("optional");
+  const recovery = providersIn("recovery");
+  const recoveryConnected = state.connections
+    .filter((connection) =>
+      PROVIDERS.some(
+        (provider) =>
+          provider.id === connection.provider && provider.capabilities.recovery,
+      ),
+    )
+    .map((connection) => connection.provider);
 
   async function uploadFiles(fileList: File[]) {
     if (fileList.length === 0 || busy) {
@@ -150,6 +161,30 @@ export function BrandConnect({ onLeave, returnTo = "/onboarding" }: Props) {
         </div>
       ) : null}
 
+      {recovery.length > 0 ? (
+        <div className="mt-8">
+          <p className="kicker">Recovery</p>
+          <p className="mt-2 text-sm text-ink-soft">
+            Sleep and overnight vitals. Separate from training.
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            {recovery.map((provider) => (
+              <BrandTile
+                key={provider.id}
+                provider={provider}
+                state={state}
+                returnTo={returnTo}
+                onLeave={onLeave}
+                busy={busy}
+                onDisconnected={(next) => setState(next)}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      <RecoveryPriority connectedProviders={recoveryConnected} />
+
       {optional.length > 0 ? (
         <div className="mt-8">
           <p className="kicker">Overlay only</p>
@@ -172,6 +207,12 @@ export function BrandConnect({ onLeave, returnTo = "/onboarding" }: Props) {
       {searchParams.get("error") === "coros" ? (
         <p className="mt-6 text-sm text-danger" role="alert">
           COROS didn’t connect. Try again from this page.
+        </p>
+      ) : null}
+      {searchParams.get("error") === "scope" ? (
+        <p className="mt-6 text-sm text-danger" role="alert">
+          Google Health must not share activity data. Disconnect and connect
+          again with sleep and health metrics only.
         </p>
       ) : null}
     </div>
@@ -300,7 +341,9 @@ function BrandTile({
             className="inline-flex h-8 items-center justify-center rounded-sm border border-line px-3 text-[12px] font-medium text-ink hover:bg-paper-sunken"
             onClick={() => {
               const confirmed = window.confirm(
-                `Disconnect ${provider.name}? Imported activities and recovery stay in Ahead. You can reconnect later.`,
+                provider.capabilities.activities
+                  ? `Disconnect ${provider.name}? Imported activities and recovery stay in Ahead. You can reconnect later.`
+                  : `Disconnect ${provider.name}? Recovery already imported stays in Ahead. Training is not affected.`,
               );
               if (!confirmed) {
                 return;

@@ -5,10 +5,12 @@ import {
   OAUTH_STATE_COOKIE,
   isOauthProvider,
   oauthCredentials,
+  requestOrigin,
   safeReturnPath,
   type OauthProviderId,
 } from "@/lib/oauth";
 import { finishCorosConnect } from "@/lib/coros/connect";
+import { finishGoogleHealthConnect } from "@/lib/google-health/connect";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
@@ -21,6 +23,25 @@ export async function GET(
   const { provider } = await context.params;
   if (provider === "coros") {
     return finishCorosConnect(request);
+  }
+  if (provider === "google_health") {
+    const jar = await cookies();
+    const returnPath = safeReturnPath(jar.get(OAUTH_RETURN_COOKIE)?.value);
+    const url = new URL(request.url);
+    const state = url.searchParams.get("state");
+    if (!state || jar.get(OAUTH_STATE_COOKIE)?.value !== state) {
+    const origin = requestOrigin(request);
+      const response = NextResponse.redirect(new URL(`${returnPath}?error=state`, origin));
+      response.cookies.set(OAUTH_STATE_COOKIE, "", { path: "/", maxAge: 0 });
+      response.cookies.set(OAUTH_RETURN_COOKIE, "", { path: "/", maxAge: 0 });
+      response.cookies.set(OAUTH_PROVIDER_COOKIE, "", { path: "/", maxAge: 0 });
+      return response;
+    }
+    const result = await finishGoogleHealthConnect(request, returnPath);
+    result.cookies.set(OAUTH_STATE_COOKIE, "", { path: "/", maxAge: 0 });
+    result.cookies.set(OAUTH_RETURN_COOKIE, "", { path: "/", maxAge: 0 });
+    result.cookies.set(OAUTH_PROVIDER_COOKIE, "", { path: "/", maxAge: 0 });
+    return result;
   }
   const url = new URL(request.url);
   const origin = url.origin;

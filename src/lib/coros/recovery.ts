@@ -6,6 +6,10 @@ import {
   MIN_OVERNIGHT_SLEEP_MINUTES,
   overnightSleepMinutes,
 } from "@/lib/recovery";
+import {
+  resolveDailyRecovery,
+  saveRecoveryObservation,
+} from "@/lib/recovery/source";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export {
@@ -553,20 +557,21 @@ export async function syncCorosRecovery(input: {
     const sleep_minutes = usableSleep(day.sleep_minutes) ?? usableSleep(previous?.sleep_minutes);
     const sleep_score = day.sleep_score ?? usableScore(previous?.sleep_score);
     const stress_avg = day.stress_avg ?? usableStress(previous?.stress_avg);
-    const { error } = await admin.from("daily_recovery").upsert(
-      {
-        athlete_id: input.athleteId,
+    try {
+      await saveRecoveryObservation({
+        athleteId: input.athleteId,
         date: day.date,
         source: "coros",
-        resting_hr,
-        sleep_hrv_ms,
-        sleep_minutes,
-        sleep_score,
-        stress_avg,
-      },
-      { onConflict: "athlete_id,date" },
-    );
-    if (error) {
+        payload: {
+          restingHrBpm: resting_hr ?? null,
+          hrvRmssdMs: sleep_hrv_ms ?? null,
+          sleepScore: sleep_score ?? null,
+          stressAvg: stress_avg ?? null,
+          sleep: sleep_minutes != null ? { durationMinutes: sleep_minutes } : null,
+        },
+      });
+      await resolveDailyRecovery(input.athleteId, day.date);
+    } catch (error) {
       console.error("COROS recovery upsert failed", error);
       continue;
     }

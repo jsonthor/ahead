@@ -7,10 +7,12 @@ import {
   OAUTH_PROVIDER_COOKIE,
   OAUTH_RETURN_COOKIE,
   OAUTH_STATE_COOKIE,
+  requestOrigin,
   safeReturnPath,
   type OauthProviderId,
 } from "@/lib/oauth";
 import { startCorosConnect } from "@/lib/coros/connect";
+import { createClient } from "@/lib/supabase/server";
 
 export const maxDuration = 30;
 
@@ -31,8 +33,24 @@ export async function GET(
     return startCorosConnect(request, returnPath);
   }
 
+  if (provider === "google_health") {
+    const origin = requestOrigin(request);
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      const login = new URL("/login", origin);
+      login.searchParams.set(
+        "next",
+        `/api/integrations/google_health/start?return=${encodeURIComponent(returnPath)}`,
+      );
+      return NextResponse.redirect(login);
+    }
+  }
+
   const state = crypto.randomUUID();
-  const origin = new URL(request.url).origin;
+  const origin = requestOrigin(request);
   const authorizeUrl = hasOauthCredentials(provider)
     ? buildAuthorizeUrl(provider as OauthProviderId, { origin, state })
     : null;

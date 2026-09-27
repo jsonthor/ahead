@@ -100,6 +100,18 @@ function FitMark(props: MarkProps) {
   );
 }
 
+function GoogleHealthMark(props: MarkProps) {
+  return (
+    <Svg {...props}>
+      <rect width="32" height="32" rx="8" fill="#1a73e8" />
+      <path
+        fill="#fff"
+        d="M16 8.2c-2.4 0-4.3 1.8-4.3 4.1 0 3.1 4.3 7.5 4.3 7.5s4.3-4.4 4.3-7.5c0-2.3-1.9-4.1-4.3-4.1Zm0 5.6a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2ZM10 22.2h12v1.6H10z"
+      />
+    </Svg>
+  );
+}
+
 export const BRAND_MARKS: Record<
   ProviderId,
   (props: MarkProps) => ReactElement
@@ -112,4 +124,5 @@ export const BRAND_MARKS: Record<
   wahoo: WahooMark,
   suunto: SuuntoMark,
   fit: FitMark,
+  google_health: GoogleHealthMark,
 };

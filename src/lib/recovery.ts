@@ -10,6 +10,9 @@ export type RecoveryObservation = {
   sleep_minutes: number | null;
   sleep_score: number | null;
   stress_avg: number | null;
+  sleep_source?: string | null;
+  hrv_source?: string | null;
+  resting_hr_source?: string | null;
 };
 
 function sleepMinutesFrom(value: number): number | null {

@@ -3,7 +3,7 @@
 **Product:** Ahead
 **Status:** vendor-neutral architecture; not yet implemented as such
 **Live today:** COROS sync, athlete file upload
-**Not live:** Garmin, Polar, Suunto, Wahoo, Apple Health, Strava overlay
+**Not live:** Garmin, Polar, Suunto, Wahoo, Apple Health, Google Health, Strava overlay
 
 Ahead's canonical object is a **training session**. Providers contribute **observations** to that session.
 
@@ -349,6 +349,8 @@ Service role only in the job, and only for that athlete’s rows. Ask Ahead stil
 ## Wellness
 
 Observations (sleep, HRV, resting HR, stress) may land on `daily_recovery`. Vendor readiness does not become Performance. Missing fields mean the signal is not in the feed.
+
+Training source and recovery source are independent. Google Health is recovery-only: sleep, HRV, resting HR, overnight vitals — never workouts. See [PRD-google-health.md](./PRD-google-health.md). Do not land it until recovery observations resolve into `daily_recovery` the same way sessions resolve from vendor observations.
 
 ## Product copy
 

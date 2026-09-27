@@ -9,6 +9,7 @@ export type OauthConfig = {
   scopes?: string;
   clientIdEnv: string;
   clientSecretEnv: string;
+  extraParams?: Record<string, string>;
 };
 
 export const OAUTH: Record<OauthProviderId, OauthConfig> = {
@@ -60,6 +61,19 @@ export const OAUTH: Record<OauthProviderId, OauthConfig> = {
     clientIdEnv: "SUUNTO_CLIENT_ID",
     clientSecretEnv: "SUUNTO_CLIENT_SECRET",
   },
+  google_health: {
+    id: "google_health",
+    authorizeUrl: "https://accounts.google.com/o/oauth2/v2/auth",
+    tokenUrl: "https://oauth2.googleapis.com/token",
+    scopes:
+      "https://www.googleapis.com/auth/googlehealth.sleep.readonly https://www.googleapis.com/auth/googlehealth.health_metrics_and_measurements.readonly",
+    clientIdEnv: "GOOGLE_HEALTH_CLIENT_ID",
+    clientSecretEnv: "GOOGLE_HEALTH_CLIENT_SECRET",
+    extraParams: {
+      access_type: "offline",
+      prompt: "consent",
+    },
+  },
 };
 
 export const OAUTH_STATE_COOKIE = "potential.oauth.state";
@@ -103,6 +117,11 @@ export function buildAuthorizeUrl(id: OauthProviderId, input: {
   url.searchParams.set("state", input.state);
   if (config.scopes) {
     url.searchParams.set("scope", config.scopes);
+  }
+  if (config.extraParams) {
+    for (const [key, value] of Object.entries(config.extraParams)) {
+      url.searchParams.set(key, value);
+    }
   }
   if (id === "strava") {
     url.searchParams.set("approval_prompt", "auto");

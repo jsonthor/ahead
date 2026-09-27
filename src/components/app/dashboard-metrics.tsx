@@ -31,6 +31,7 @@ import {
   historyDays,
   isEstablishing,
 } from "@/lib/load/training-state";
+import { recoverySourceLabel } from "@/lib/recovery/priority";
 import {
   formatHrv,
   formatRestingHr,
@@ -168,7 +169,7 @@ export function DashboardMetrics() {
       });
     void supabase
       .from("daily_recovery")
-      .select("date, resting_hr, sleep_hrv_ms, sleep_minutes, sleep_score, stress_avg")
+      .select("date, resting_hr, sleep_hrv_ms, sleep_minutes, sleep_score, stress_avg, sleep_source, hrv_source, resting_hr_source")
       .lte("date", today)
       .order("date", { ascending: true })
       .limit(400)
@@ -399,7 +400,15 @@ function RecoveryTonight({
       id: "sleep",
       label: "Sleep",
       value: formatSleepClock(sleepMinutes) ?? "—",
-      note: sleepMinutes == null ? "No overnight" : latest.sleep_score != null ? `Score ${latest.sleep_score}` : null,
+      note:
+        sleepMinutes == null
+          ? "No overnight"
+          : [
+              latest.sleep_source ? recoverySourceLabel(latest.sleep_source) : null,
+              latest.sleep_score != null ? `Score ${latest.sleep_score}` : null,
+            ]
+              .filter(Boolean)
+              .join(" · ") || null,
       better: "higher" as const,
       range: recoveryRange(rows, latest.date, (row) => overnightSleepMinutes(row.sleep_minutes), sleepMinutes, 30),
     },
@@ -407,7 +416,7 @@ function RecoveryTonight({
       id: "hrv",
       label: "HRV",
       value: formatHrv(latest.sleep_hrv_ms) ?? "—",
-      note: null,
+      note: latest.hrv_source ? recoverySourceLabel(latest.hrv_source) : null,
       better: "higher" as const,
       range: recoveryRange(rows, latest.date, (row) => row.sleep_hrv_ms, latest.sleep_hrv_ms, 6),
     },
@@ -415,7 +424,7 @@ function RecoveryTonight({
       id: "rhr",
       label: "Resting HR",
       value: formatRestingHr(latest.resting_hr) ?? "—",
-      note: null,
+      note: latest.resting_hr_source ? recoverySourceLabel(latest.resting_hr_source) : null,
       better: "lower" as const,
       range: recoveryRange(rows, latest.date, (row) => row.resting_hr, latest.resting_hr, 3),
     },
