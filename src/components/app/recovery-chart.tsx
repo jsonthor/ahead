@@ -184,6 +184,22 @@ export function RecoveryChartDialog({
     const line = series
       .map((point, index) => `${index === 0 ? "M" : "L"}${xAt(index, total)} ${y(point.value)}`)
       .join(" ");
+    const ranged = series.flatMap((point, index) =>
+      point.range ? [{ index, low: point.range.low, high: point.range.high }] : [],
+    );
+    const band =
+      ranged.length >= 2
+        ? [
+            ...ranged.map(
+              (point, order) =>
+                `${order === 0 ? "M" : "L"}${xAt(point.index, total)} ${y(point.high)}`,
+            ),
+            ...[...ranged]
+              .reverse()
+              .map((point) => `L${xAt(point.index, total)} ${y(point.low)}`),
+            "Z",
+          ].join(" ")
+        : null;
     const ticks: number[] = [];
     if (total > 1) {
       const count = total > 90 ? 6 : 5;
@@ -191,13 +207,12 @@ export function RecoveryChartDialog({
         ticks.push(Math.round((index * (total - 1)) / (count - 1)));
       }
     }
-    return { total, scale, y, line, ticks: [...new Set(ticks)] };
+    return { total, scale, y, line, band, ticks: [...new Set(ticks)] };
   }, [series]);
 
   const lastIndex = Math.max(0, series.length - 1);
   const activeIndex = hoverIndex ?? lastIndex;
   const active = series[activeIndex] ?? null;
-  const typical = active?.range ?? [...series].reverse().find((point) => point.range)?.range ?? null;
   const first = series[0];
   const last = series[series.length - 1];
   const rowByDate = useMemo(() => new Map(rows.map((row) => [row.date, row])), [rows]);
@@ -205,13 +220,6 @@ export function RecoveryChartDialog({
   const favorable = active?.range
     ? rangeFavorable(active.range.status, spec.better)
     : true;
-  const band =
-    typical && series.length > 1
-      ? {
-          y: layout.y(typical.high),
-          height: Math.max(2, layout.y(typical.low) - layout.y(typical.high)),
-        }
-      : null;
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -241,7 +249,7 @@ export function RecoveryChartDialog({
               {first && last ? (
                 <p className="mt-1 text-[12px] text-muted">
                   {formatDayTitle(first.date)} – {formatDayTitle(last.date)}
-                  {" · "}shaded band is typical range for this night (prior 28 nights)
+                  {" · "}shaded band is typical range (prior 28 nights)
                 </p>
               ) : null}
             </div>
@@ -303,15 +311,8 @@ export function RecoveryChartDialog({
                   </text>
                 </g>
               ))}
-              {band ? (
-                <rect
-                  x={LEFT}
-                  y={band.y}
-                  width={INNER_W}
-                  height={band.height}
-                  fill="var(--forest)"
-                  fillOpacity="0.12"
-                />
+              {layout.band ? (
+                <path d={layout.band} fill="var(--forest)" fillOpacity="0.12" />
               ) : null}
               <path
                 d={layout.line}
