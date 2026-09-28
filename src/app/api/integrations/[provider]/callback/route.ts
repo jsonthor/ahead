@@ -30,7 +30,7 @@ export async function GET(
     const url = new URL(request.url);
     const state = url.searchParams.get("state");
     if (!state || jar.get(OAUTH_STATE_COOKIE)?.value !== state) {
-    const origin = requestOrigin(request);
+      const origin = requestOrigin(request);
       const response = NextResponse.redirect(new URL(`${returnPath}?error=state`, origin));
       response.cookies.set(OAUTH_STATE_COOKIE, "", { path: "/", maxAge: 0 });
       response.cookies.set(OAUTH_RETURN_COOKIE, "", { path: "/", maxAge: 0 });

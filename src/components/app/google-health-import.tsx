@@ -28,7 +28,14 @@ export function GoogleHealthImport() {
           method: "POST",
         });
         if (response.status === 401) {
-          window.location.href = `/api/integrations/google_health/start?return=${encodeURIComponent(returnPath)}`;
+          setProgress({
+            phase: "error",
+            message: "Sign in again, then connect Google Health from Connect.",
+            processed: 0,
+            total: 0,
+            saved: 0,
+          });
+          setFailed(true);
           return;
         }
         const last = await readImportProgress(response, (next) => {
@@ -41,8 +48,14 @@ export function GoogleHealthImport() {
         }
         if (!last || last.phase === "error") {
           if (last?.reauth) {
-            window.location.href = `/api/integrations/google_health/start?return=${encodeURIComponent(returnPath)}`;
-            return;
+            setProgress({
+              phase: "error",
+              message: "Google Health needs permission again.",
+              processed: 0,
+              total: 0,
+              saved: 0,
+              reauth: true,
+            });
           }
           setFailed(true);
           return;
@@ -75,9 +88,16 @@ export function GoogleHealthImport() {
       </p>
       <p className="mt-8 text-sm text-ink-soft">{progress.message}</p>
       {failed ? (
-        <p className="mt-4 text-sm text-danger" role="alert">
-          Recovery sync failed. Try Connect again from Integrations.
-        </p>
+        <div className="mt-6 grid gap-3">
+          <p className="text-sm text-danger" role="alert">
+            {progress.reauth
+              ? "Google Health needs permission again. Go back to Connect and tap Google Health once."
+              : "Recovery sync failed. Try Connect again from Integrations."}
+          </p>
+          <a href={`/app/connect`} className="home-cta home-cta-sm w-fit">
+            Back to Connect
+          </a>
+        </div>
       ) : null}
     </main>
   );

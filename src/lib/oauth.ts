@@ -89,9 +89,11 @@ export function oauthCredentials(id: OauthProviderId): {
   clientSecret: string | undefined;
 } {
   const config = OAUTH[id];
+  const clientId = process.env[config.clientIdEnv]?.trim();
+  const clientSecret = process.env[config.clientSecretEnv]?.trim();
   return {
-    clientId: process.env[config.clientIdEnv],
-    clientSecret: process.env[config.clientSecretEnv],
+    clientId: clientId || undefined,
+    clientSecret: clientSecret || undefined,
   };
 }
 

@@ -12,6 +12,7 @@ import {
   type OauthProviderId,
 } from "@/lib/oauth";
 import { startCorosConnect } from "@/lib/coros/connect";
+import { providerById, type ProviderId } from "@/lib/integrations";
 import { createClient } from "@/lib/supabase/server";
 
 export const maxDuration = 30;
@@ -54,6 +55,16 @@ export async function GET(
   const authorizeUrl = hasOauthCredentials(provider)
     ? buildAuthorizeUrl(provider as OauthProviderId, { origin, state })
     : null;
+
+  if (!authorizeUrl) {
+    const live = providerById(provider as ProviderId).live;
+    if (live) {
+      const failed = new URL(returnPath, origin);
+      failed.searchParams.set("error", "oauth_config");
+      failed.searchParams.set("provider", provider);
+      return NextResponse.redirect(failed);
+    }
+  }
 
   const destination =
     authorizeUrl ??

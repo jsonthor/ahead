@@ -34,7 +34,7 @@ export async function finishGoogleHealthConnect(
     return redirect(`${returnPath}?error=code`);
   }
   if (code.startsWith("preview")) {
-    return redirect(`${returnPath}?connected=google_health`);
+    return redirect(`${returnPath}?error=oauth_config`);
   }
 
   const { clientId, clientSecret } = oauthCredentials("google_health");

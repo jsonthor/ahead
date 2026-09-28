@@ -209,6 +209,18 @@ export function BrandConnect({ onLeave, returnTo = "/onboarding" }: Props) {
           COROS didn’t connect. Try again from this page.
         </p>
       ) : null}
+      {searchParams.get("error") === "oauth_config" ? (
+        <p className="mt-6 text-sm text-danger" role="alert">
+          {searchParams.get("provider") === "google_health"
+            ? "Google Health isn’t configured on this site. Add the Google Health client ID and secret to the host environment, then try Connect again."
+            : "That connection isn’t configured on this site yet."}
+        </p>
+      ) : null}
+      {searchParams.get("error") === "reauth" ? (
+        <p className="mt-6 text-sm text-danger" role="alert">
+          Google Health needs permission again. Connect it from this page.
+        </p>
+      ) : null}
       {searchParams.get("error") === "scope" ? (
         <p className="mt-6 text-sm text-danger" role="alert">
           Google Health must not share activity data. Disconnect and connect
