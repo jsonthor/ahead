@@ -419,7 +419,11 @@ function RecoveryTonight({
   today: string;
 }) {
   const [chart, setChart] = useState<RecoveryChartMetric | null>(null);
-  const latest = [...rows].reverse().find((row) => row.date <= today && hasRecoverySignal(row));
+  const latest =
+    [...rows].reverse().find(
+      (row) => row.date <= today && overnightSleepMinutes(row.sleep_minutes) != null,
+    ) ??
+    [...rows].reverse().find((row) => row.date <= today && hasRecoverySignal(row));
   if (!latest) {
     return null;
   }

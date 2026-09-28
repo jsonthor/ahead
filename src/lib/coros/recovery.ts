@@ -269,14 +269,13 @@ function patchFromRecord(record: Record<string, unknown>): Omit<RecoveryDay, "da
   const score = firstNumber(record, SLEEP_SCORE_KEYS);
   const stress = firstNumber(record, STRESS_KEYS);
   const minutes =
-    sleepFromWindow(record) ??
     (sleepMin != null
       ? overnightSleepMinutes(sleepMin.value)
       : sleepDur != null
         ? overnightSleepMinutes(sleepDur.value)
         : sleepHours != null
           ? overnightSleepMinutes(sleepHours.value)
-          : null);
+          : null) ?? sleepFromWindow(record);
   return {
     ...(rhr != null && rhrFrom(rhr.value) != null ? { resting_hr: rhrFrom(rhr.value)! } : {}),
     ...(hrv != null && hrvMsFrom(hrv.key, hrv.value) != null
@@ -310,7 +309,7 @@ function mergeDay(into: Map<string, RecoveryDay>, date: string, patch: Omit<Reco
     sleep_hrv_ms: patch.sleep_hrv_ms ?? current.sleep_hrv_ms,
     sleep_minutes: preferOvernight(patch.sleep_minutes, current.sleep_minutes),
     sleep_score: patch.sleep_score ?? current.sleep_score,
-    stress_avg: patch.stress_avg ?? current.stress_avg,
+    stress_avg: patch.stress_avg != null ? patch.stress_avg : current.stress_avg,
   });
 }
 
@@ -553,11 +552,11 @@ export async function syncCorosRecovery(input: {
   let earliestChanged: string | null = null;
   for (const day of days.values()) {
     const previous = existingByDate.get(day.date);
-    const resting_hr = day.resting_hr ?? usableRhr(previous?.resting_hr);
-    const sleep_hrv_ms = day.sleep_hrv_ms ?? usableHrv(previous?.sleep_hrv_ms);
-    const sleep_minutes = usableSleep(day.sleep_minutes) ?? usableSleep(previous?.sleep_minutes);
-    const sleep_score = day.sleep_score ?? usableScore(previous?.sleep_score);
-    const stress_avg = day.stress_avg ?? usableStress(previous?.stress_avg);
+    const resting_hr = usableRhr(day.resting_hr);
+    const sleep_hrv_ms = usableHrv(day.sleep_hrv_ms);
+    const sleep_minutes = usableSleep(day.sleep_minutes);
+    const sleep_score = usableScore(day.sleep_score);
+    const stress_avg = usableStress(day.stress_avg);
     try {
       await saveRecoveryObservation({
         athleteId: input.athleteId,

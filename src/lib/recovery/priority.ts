@@ -131,3 +131,42 @@ export function pickFromPriority<T>(
   }
   return { value: null, source: null };
 }
+
+function sourceRank(order: RecoverySourceId[], source: string | null | undefined) {
+  if (!source) {
+    return Number.POSITIVE_INFINITY;
+  }
+  const index = order.indexOf(source);
+  return index < 0 ? Number.POSITIVE_INFINITY : index;
+}
+
+/** Keep a lower-priority winner, but always refresh from the same or higher-priority source. */
+export function keepResolved<T>(input: {
+  recast: boolean;
+  order: RecoverySourceId[];
+  existingValue: T | null | undefined;
+  existingSource: string | null | undefined;
+  picked: { value: T | null; source: string | null };
+}): { value: T | null; source: string | null } {
+  if (input.recast) {
+    return input.picked;
+  }
+  const existingRank = sourceRank(input.order, input.existingSource);
+  const pickedRank = sourceRank(input.order, input.picked.source);
+  if (input.picked.value != null && pickedRank <= existingRank) {
+    return input.picked;
+  }
+  if (input.existingSource && input.existingValue != null) {
+    return { value: input.existingValue, source: input.existingSource };
+  }
+  return input.picked;
+}
+
+export function connectedOrder(order: RecoverySourceId[], connected: RecoverySourceId[]) {
+  if (connected.length === 0) {
+    return order;
+  }
+  const allowed = new Set(connected);
+  const next = order.filter((id) => allowed.has(id));
+  return next.length > 0 ? next : connected;
+}

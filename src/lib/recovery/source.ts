@@ -3,6 +3,8 @@ import { overnightSleepMinutes } from "@/lib/recovery";
 import {
   pickFromPriority,
   parseRecoveryPriority,
+  keepResolved,
+  connectedOrder,
   RECOVERY_METRICS,
   type RecoverySourceId,
   type RecoverySourcePayload,
@@ -14,6 +16,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export {
   parseRecoveryPriority,
   pickFromPriority,
+  keepResolved,
+  connectedOrder,
   RECOVERY_METRICS,
   recoverySourceLabel,
   withConnectedSources,
@@ -164,20 +168,15 @@ export async function registerRecoverySource(
   return seeded;
 }
 
-function keepResolved<T>(input: {
-  recast: boolean;
-  existingValue: T | null | undefined;
-  existingSource: string | null | undefined;
-  picked: { value: T | null; source: string | null };
-}): { value: T | null; source: string | null } {
-  if (
-    !input.recast &&
-    input.existingSource &&
-    input.existingValue != null
-  ) {
-    return { value: input.existingValue, source: input.existingSource };
-  }
-  return input.picked;
+async function loadConnectedRecoverySources(athleteId: string): Promise<RecoverySourceId[]> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("integrations")
+    .select("provider")
+    .eq("athlete_id", athleteId)
+    .eq("status", "connected")
+    .in("provider", ["coros", "google_health"]);
+  return (data ?? []).map((row) => row.provider);
 }
 
 export async function resolveDailyRecovery(
@@ -187,7 +186,14 @@ export async function resolveDailyRecovery(
 ) {
   const admin = createAdminClient();
   const recast = options?.recast === true;
-  const priority = await loadRecoveryPriority(athleteId);
+  const [priority, connected] = await Promise.all([
+    loadRecoveryPriority(athleteId),
+    loadConnectedRecoverySources(athleteId),
+  ]);
+  const sleepOrder = connectedOrder(priority.sleep, connected);
+  const hrvOrder = connectedOrder(priority.hrv, connected);
+  const rhrOrder = connectedOrder(priority.resting_hr, connected);
+  const stressOrder = connectedOrder(["coros"], connected);
   const { data, error } = await admin
     .from("recovery_observations")
     .select("source, payload")
@@ -212,15 +218,16 @@ export async function resolveDailyRecovery(
 
   const sleep = keepResolved({
     recast,
+    order: sleepOrder,
     existingValue: existing?.sleep_minutes,
     existingSource: existing?.sleep_source,
-    picked: pickFromPriority(observations, priority.sleep, (payload) =>
+    picked: pickFromPriority(observations, sleepOrder, (payload) =>
       overnightSleepMinutes(payload.sleep?.durationMinutes ?? null),
     ),
   });
   const sleepMinutes = sleep.value;
   const sleepDetail = recast
-    ? pickFromPriority(observations, priority.sleep, (payload) => payload.sleep ?? null)
+    ? pickFromPriority(observations, sleepOrder, (payload) => payload.sleep ?? null)
     : {
         value: {
           durationMinutes: existing?.sleep_minutes ?? null,
@@ -232,22 +239,24 @@ export async function resolveDailyRecovery(
 
   const hrv = keepResolved({
     recast,
+    order: hrvOrder,
     existingValue: existing?.sleep_hrv_ms,
     existingSource: existing?.hrv_source,
-    picked: pickFromPriority(observations, priority.hrv, (payload) =>
+    picked: pickFromPriority(observations, hrvOrder, (payload) =>
       asNumber(payload.hrvRmssdMs),
     ),
   });
   const rhr = keepResolved({
     recast,
+    order: rhrOrder,
     existingValue: existing?.resting_hr,
     existingSource: existing?.resting_hr_source,
-    picked: pickFromPriority(observations, priority.resting_hr, (payload) =>
+    picked: pickFromPriority(observations, rhrOrder, (payload) =>
       asNumber(payload.restingHrBpm),
     ),
   });
   const respiratory = recast
-    ? pickFromPriority(observations, priority.hrv, (payload) =>
+    ? pickFromPriority(observations, hrvOrder, (payload) =>
         asNumber(payload.respiratoryRate),
       )
     : {
@@ -255,10 +264,10 @@ export async function resolveDailyRecovery(
         source: null,
       };
   const spo2 = recast
-    ? pickFromPriority(observations, priority.sleep, (payload) => asNumber(payload.spo2Pct))
+    ? pickFromPriority(observations, sleepOrder, (payload) => asNumber(payload.spo2Pct))
     : { value: existing?.spo2_pct ?? null, source: null };
   const temperature = recast
-    ? pickFromPriority(observations, priority.sleep, (payload) => payload.sleepTemperature ?? null)
+    ? pickFromPriority(observations, sleepOrder, (payload) => payload.sleepTemperature ?? null)
     : {
         value: existing
           ? {
@@ -269,12 +278,18 @@ export async function resolveDailyRecovery(
           : null,
         source: null,
       };
-  const score = pickFromPriority(observations, priority.sleep, (payload) =>
+  const score = pickFromPriority(observations, sleepOrder, (payload) =>
     asNumber(payload.sleepScore),
   );
-  const stress = pickFromPriority(observations, ["coros"], (payload) =>
-    asNumber(payload.stressAvg),
-  );
+  const stress = keepResolved({
+    recast,
+    order: stressOrder,
+    existingValue: existing?.stress_avg,
+    existingSource: existing?.stress_avg != null ? "coros" : null,
+    picked: pickFromPriority(observations, stressOrder, (payload) =>
+      asNumber(payload.stressAvg),
+    ),
+  });
 
   const coverage =
     sleepMinutes != null && hrv.value != null && rhr.value != null
@@ -296,7 +311,7 @@ export async function resolveDailyRecovery(
       sleep_hrv_ms: hrv.value,
       sleep_minutes: sleepMinutes,
       sleep_score: recast ? score.value : existing?.sleep_score ?? score.value,
-      stress_avg: recast ? stress.value : existing?.stress_avg ?? stress.value,
+      stress_avg: stress.value,
       sleep_source: sleep.source,
       hrv_source: hrv.source,
       resting_hr_source: rhr.source,
