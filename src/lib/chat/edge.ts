@@ -58,6 +58,30 @@ export async function invokeCoachReview(input: {
   return body.review;
 }
 
+export async function invokeWeeklyReview(input: {
+  packet: unknown;
+  previousWeek?: unknown;
+}) {
+  const headers = await authHeaders();
+  const response = await fetch(functionUrl("potential-ai"), {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      mode: "weekly-review",
+      packet: input.packet,
+      previousWeek: input.previousWeek ?? null,
+    }),
+  });
+  const body = (await response.json().catch(() => null)) as {
+    review?: Record<string, unknown>;
+    message?: string;
+  } | null;
+  if (!response.ok || !body?.review) {
+    throw new Error(body?.message || "Could not write the week.");
+  }
+  return body.review;
+}
+
 export async function invokePotentialAi(input: {
   conversationId: string | null;
   message: string;

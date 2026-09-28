@@ -11,6 +11,7 @@ import {
   createActivityInsightResponse,
   createChatResponse,
   createCoachReviewResponse,
+  createWeeklyReviewResponse,
   functionCalls,
   LUNA_MODEL,
   outputText,
@@ -175,6 +176,42 @@ Deno.serve(async (req) => {
         {
           error: "generate",
           message: error instanceof Error ? error.message : "Could not write the review.",
+        },
+        500,
+      );
+    }
+  }
+
+  if (body?.mode === "weekly-review") {
+    try {
+      const response = await createWeeklyReviewResponse([
+        userInputMessage(
+          JSON.stringify({
+            packet: body.packet ?? null,
+            previousWeek: body.previousWeek ?? null,
+          }),
+        ),
+      ]);
+      const text = outputText(response);
+      if (response.error?.message) {
+        throw new Error(response.error.message);
+      }
+      if (!text.trim()) {
+        throw new Error("Weekly review returned an empty answer. Try again.");
+      }
+      let review: unknown;
+      try {
+        review = JSON.parse(text);
+      } catch {
+        throw new Error("Weekly review did not return a review object.");
+      }
+      return jsonResponse({ review });
+    } catch (error) {
+      console.error("weekly-review failed", error);
+      return jsonResponse(
+        {
+          error: "generate",
+          message: error instanceof Error ? error.message : "Could not write the week.",
         },
         500,
       );

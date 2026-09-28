@@ -49,6 +49,7 @@ export type ReviewPacket = {
   performanceStart: PerformanceReading;
   performanceEnd: PerformanceReading;
   races: ReviewSession[];
+  sessions: ReviewSession[];
   upcomingRaces: ReviewSession[];
   fixtures: ReviewSession[];
   upcomingPlanned: ReviewSession[];
@@ -256,6 +257,7 @@ export async function loadReviewPacket(input: {
     performanceStart: inferPerformance(days, input.periodStart),
     performanceEnd: inferPerformance(days, input.periodEnd),
     races: uniqueRaces(inReview),
+    sessions: [...inReview].sort((left, right) => left.date.localeCompare(right.date)),
     upcomingRaces: uniqueRaces(upcoming),
     fixtures: dedupeFixtures([
       ...routines.filter((row) => row.source === "routine"),

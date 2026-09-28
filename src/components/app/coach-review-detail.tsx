@@ -100,8 +100,8 @@ export function CoachReviewDetail({ id }: { id: string }) {
       {review.unknown ? (
         <Article title="What we don't know yet" body={review.unknown} />
       ) : null}
-      {review.lessons && !weekly ? (
-        <Article title="What did we learn?" body={review.lessons} />
+      {review.lessons ? (
+        <Article title={weekly ? "Takeaway" : "What did we learn?"} body={review.lessons} />
       ) : null}
 
       {weekly ? (

@@ -513,6 +513,37 @@ function realProblems(items: { title: string; body: string }[]) {
   return items.filter((item) => !EVIDENCE_GAP.test(`${item.title} ${item.body}`));
 }
 
+export function applyGeneratedWeeklyReview(
+  review: CoachReview,
+  generated: Record<string, unknown>,
+): CoachReview {
+  const row = unwrapGenerated(generated);
+  const happened = field(row, "happened", "whatHappened", "what_happened");
+  const lessons = field(row, "lessons", "takeaway", "whatWeLearned", "what_we_learned");
+  if (!happened || !lessons) {
+    throw new Error("Weekly review came back incomplete. Try again.");
+  }
+  const immediate = field(row, "immediatePriority", "immediate_priority");
+  return {
+    ...review,
+    kind: "week",
+    source: "luna",
+    happened,
+    worked: asFindings(row.worked).slice(0, 2),
+    didnt: realProblems(asFindings(row.didnt)).slice(0, 2),
+    unknown: asText(row.unknown),
+    lessons,
+    immediatePriority: immediate || null,
+    objective: "",
+    didItWork: "",
+    nextObjective: "",
+    nextKeep: [],
+    nextChange: [],
+    nextWatch: [],
+    nextPriorities: [],
+  };
+}
+
 export function applyGeneratedReview(
   review: CoachReview,
   generated: Record<string, unknown>,

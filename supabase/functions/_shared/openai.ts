@@ -5,6 +5,8 @@ import {
 import {
   COACH_REVIEW_INSTRUCTIONS,
   COACH_REVIEW_SCHEMA,
+  WEEKLY_REVIEW_INSTRUCTIONS,
+  WEEKLY_REVIEW_SCHEMA,
 } from "./coach-review.ts";
 import { STABLE_SYSTEM_PROMPT } from "./prompt.ts";
 import { OPENAI_TOOLS } from "./tools.ts";
@@ -191,6 +193,28 @@ export function createCoachReviewResponse(input: unknown) {
       },
     },
     COACH_REVIEW_TIMEOUT_MS,
+  );
+}
+
+export function createWeeklyReviewResponse(input: unknown) {
+  return openaiFetch(
+    {
+      model: LUNA_MODEL,
+      reasoning: { effort: "low" },
+      max_output_tokens: 1200,
+      instructions: WEEKLY_REVIEW_INSTRUCTIONS,
+      input,
+      store: false,
+      text: {
+        format: {
+          type: "json_schema",
+          name: "weekly_review",
+          strict: true,
+          schema: WEEKLY_REVIEW_SCHEMA,
+        },
+      },
+    },
+    OPENAI_TIMEOUT_MS,
   );
 }
 

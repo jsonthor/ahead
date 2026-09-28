@@ -1,6 +1,7 @@
-import { invokeCoachReview } from "@/lib/chat/edge";
+import { invokeCoachReview, invokeWeeklyReview } from "@/lib/chat/edge";
 import {
   applyGeneratedReview,
+  applyGeneratedWeeklyReview,
   composeCoachReview,
   composeWeeklyReview,
 } from "@/lib/coach-review/compose";
@@ -10,16 +11,23 @@ import { readCoachReviews, saveCoachReview } from "@/lib/coach-review/store";
 import { reviewKind } from "@/lib/coach-review/types";
 import { formatTrainingMetric } from "@/lib/load/training-state";
 
-function sessionBrief(row: { date: string; title: string; weekday: string; kind: string }) {
+function sessionBrief(row: { date: string; title: string; weekday: string; kind: string; minutes?: number | null }) {
   return {
     date: row.date,
     title: row.title,
     weekday: row.weekday,
     kind: row.kind,
+    minutes: row.minutes ?? null,
   };
 }
 
-function packetBrief(packet: ReviewPacket, draft: ReturnType<typeof composeCoachReview>) {
+function packetBrief(
+  packet: ReviewPacket,
+  draft: Pick<
+    ReturnType<typeof composeCoachReview>,
+    "specificTrend" | "aerobicTrend" | "performanceEvidence"
+  >,
+) {
   return {
     periodStart: packet.periodStart,
     periodEnd: packet.periodEnd,
@@ -38,6 +46,7 @@ function packetBrief(packet: ReviewPacket, draft: ReturnType<typeof composeCoach
     performanceScore: packet.performanceEnd.score,
     racesInBlock: packet.races.map(sessionBrief),
     raceCount: packet.races.length,
+    sessionsInWeek: packet.sessions.map(sessionBrief),
     raceResults: packet.raceResults.map((row) => ({
       date: row.date,
       title: row.title,
@@ -135,10 +144,33 @@ export async function startWeeklyReview(input: {
     periodStart: input.periodStart ?? availability.period.start,
     periodEnd: input.periodEnd ?? availability.period.end,
   });
-  const review = composeWeeklyReview({
+  const previous = readCoachReviews(input.athleteId).reviews.find(
+    (row) =>
+      reviewKind(row) === "week" &&
+      row.id !== input.replaceId &&
+      row.source === "luna",
+  );
+  const draft = composeWeeklyReview({
     athleteId: input.athleteId,
     packet,
   });
+  const generated = await invokeWeeklyReview({
+    packet: packetBrief(packet, draft),
+    previousWeek: previous
+      ? {
+          title: previous.title,
+          periodStart: previous.periodStart,
+          periodEnd: previous.periodEnd,
+          happened: previous.happened,
+          lessons: previous.lessons,
+          immediatePriority: previous.immediatePriority ?? null,
+        }
+      : null,
+  });
+  const review = applyGeneratedWeeklyReview(draft, generated);
+  if (review.source !== "luna") {
+    throw new Error("Weekly review did not use the coaching model.");
+  }
   if (input.replaceId) {
     review.id = input.replaceId;
   }

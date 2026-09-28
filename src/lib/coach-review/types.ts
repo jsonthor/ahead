@@ -33,7 +33,7 @@ export type CoachReview = {
   periodEnd: string;
   createdAt: string;
   completedAt: string;
-  source?: "terra" | "compose";
+  source?: "terra" | "luna" | "compose";
   title: string;
   directionLabel: string;
   directionTrajectory: string | null;
