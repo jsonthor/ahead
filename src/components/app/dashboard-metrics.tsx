@@ -116,72 +116,100 @@ export function DashboardMetrics() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     const supabase = createClient();
     const columns =
       "date, training_load, fitness, fatigue, form, potential, aerobic_reserve, specific_capacity, aerobic_raw, specific_raw, acute_fatigue, status";
-    void supabase
-      .from("daily_loads")
-      .select(columns)
-      .lte("date", today)
-      .not("status", "eq", "forecast")
-      .order("date", { ascending: false })
-      .limit(1)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (error) {
-          console.error("Dashboard headline failed", error);
-          setHeadline(null);
+    void fetch("/api/load/advance", { method: "POST" })
+      .catch((error) => {
+        console.error("Training state advance failed", error);
+      })
+      .then(() => {
+        if (cancelled) {
           return;
         }
-        setHeadline((data as LoadRow | null) ?? null);
+        void supabase
+          .from("daily_loads")
+          .select(columns)
+          .lte("date", today)
+          .not("status", "eq", "forecast")
+          .order("date", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+          .then(({ data, error }) => {
+            if (cancelled) {
+              return;
+            }
+            if (error) {
+              console.error("Dashboard headline failed", error);
+              setHeadline(null);
+              return;
+            }
+            setHeadline((data as LoadRow | null) ?? null);
+          });
+        void supabase
+          .from("daily_loads")
+          .select(columns)
+          .lte("date", today)
+          .order("date", { ascending: false })
+          .limit(1000)
+          .then(({ data, error }) => {
+            if (cancelled) {
+              return;
+            }
+            if (error) {
+              console.error("Dashboard metrics failed", error);
+              setRows([]);
+              return;
+            }
+            setRows([...(data ?? [])].reverse());
+          });
+        void supabase
+          .from("profiles")
+          .select("potential_calibration")
+          .eq("id", user.id)
+          .maybeSingle()
+          .then(({ data }) => {
+            if (cancelled) {
+              return;
+            }
+            const stored = data?.potential_calibration;
+            setCalibration(isPotentialCalibration(stored) ? stored : null);
+          });
+        void supabase
+          .from("daily_loads")
+          .select("date")
+          .lte("date", today)
+          .order("date", { ascending: true })
+          .limit(1)
+          .maybeSingle()
+          .then(({ data }) => {
+            if (cancelled) {
+              return;
+            }
+            setHistoryStart(data?.date ?? null);
+          });
+        void supabase
+          .from("daily_recovery")
+          .select("date, resting_hr, sleep_hrv_ms, sleep_minutes, sleep_score, stress_avg, sleep_source, hrv_source, resting_hr_source")
+          .lte("date", today)
+          .order("date", { ascending: true })
+          .limit(1000)
+          .then(({ data, error }) => {
+            if (cancelled) {
+              return;
+            }
+            if (error) {
+              console.error("Dashboard recovery failed", error);
+              setRecovery([]);
+              return;
+            }
+            setRecovery((data as RecoveryObservation[] | null) ?? []);
+          });
       });
-    void supabase
-      .from("daily_loads")
-      .select(columns)
-      .lte("date", today)
-      .order("date", { ascending: false })
-      .limit(1000)
-      .then(({ data, error }) => {
-        if (error) {
-          console.error("Dashboard metrics failed", error);
-          setRows([]);
-          return;
-        }
-        setRows([...(data ?? [])].reverse());
-      });
-    void supabase
-      .from("profiles")
-      .select("potential_calibration")
-      .eq("id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        const stored = data?.potential_calibration;
-        setCalibration(isPotentialCalibration(stored) ? stored : null);
-      });
-    void supabase
-      .from("daily_loads")
-      .select("date")
-      .lte("date", today)
-      .order("date", { ascending: true })
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => {
-        setHistoryStart(data?.date ?? null);
-      });
-    void supabase
-      .from("daily_recovery")
-      .select("date, resting_hr, sleep_hrv_ms, sleep_minutes, sleep_score, stress_avg, sleep_source, hrv_source, resting_hr_source")
-      .lte("date", today)
-      .order("date", { ascending: true })
-      .limit(1000)
-      .then(({ data, error }) => {
-        if (error) {
-          console.error("Dashboard recovery failed", error);
-          setRecovery([]);
-          return;
-        }
-        setRecovery((data as RecoveryObservation[] | null) ?? []);
-      });
+    return () => {
+      cancelled = true;
+    };
   }, [reload, today, user.id]);
 
   const actual = useMemo(

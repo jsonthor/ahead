@@ -2,6 +2,7 @@ import { buildContextPacket } from "@/lib/chat/context";
 import { chatModelReady, runChatTurn } from "@/lib/chat/model";
 import { systemPrompt } from "@/lib/chat/prompt";
 import { parseProposal } from "@/lib/chat/proposal";
+import { advanceTrainingStateToDate } from "@/lib/load/banister";
 import { createClient } from "@/lib/supabase/server";
 
 export const maxDuration = 60;
@@ -72,6 +73,7 @@ export async function POST(request: Request) {
     .eq("id", user.id)
     .maybeSingle();
   const timeZone = profile?.timezone || "Europe/London";
+  await advanceTrainingStateToDate(user.id, timeZone);
 
   let conversationId = body?.conversationId ?? null;
   if (conversationId) {

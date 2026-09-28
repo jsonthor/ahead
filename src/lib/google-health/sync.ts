@@ -7,6 +7,7 @@ import {
   saveRecoveryObservation,
   resolveDailyRecoveryRange,
 } from "@/lib/recovery/source";
+import { recomputePerformanceState } from "@/lib/load/banister";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function syncGoogleHealthRecovery(input: {
@@ -49,6 +50,20 @@ export async function syncGoogleHealthRecovery(input: {
     });
   }
   await resolveDailyRecoveryRange(input.athleteId, dates);
+  if (dates.length > 0) {
+    input.onProgress?.({
+      phase: "wellness",
+      message: "Updating Strain and Performance from overnight recovery…",
+      processed: saved,
+      total: dates.length,
+      saved,
+    });
+    try {
+      await recomputePerformanceState(input.athleteId, timezone, dates[0]);
+    } catch (error) {
+      console.error("Google Health performance recompute failed", error);
+    }
+  }
 
   const admin = createAdminClient();
   const finished = new Date().toISOString();

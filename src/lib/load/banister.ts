@@ -3,10 +3,15 @@ import type { DataQuality } from "@/lib/activity";
 import type { Json } from "@/lib/database.types";
 import type { TrainingMix } from "@/lib/load/derive";
 import {
+  ACUTE_TAU,
+  ACCUSTOMED_TAU,
+  applyRecoveryToPerformance,
   calculatePotentialSeries,
+  ewmaStep,
   isPotentialCalibration,
   POTENTIAL_VERSION,
   recoveryDelta,
+  strainScore,
 } from "@/lib/load/potential";
 import {
   calculateTrainingState,
@@ -123,11 +128,16 @@ function emptyDay(): DayLoad {
 }
 
 /**
- * Banister Fatigue is load-only. Potential fatigue is strain vs accustomed
- * load, with recovery allowed to move it by at most ±20.
+ * Banister Fitness / Fatigue / Form and aerobic / specific capacity are
+ * load-only. Recovery never manufactures training load.
+ *
+ * Strain and Performance apply a recovery adjustment on top of that
+ * load-derived strain. Call recomputePerformanceState when recovery
+ * changes; call recomputeTrainingState / advanceTrainingStateToDate
+ * when recorded load or the calendar date changes.
  */
 
-export async function recomputeDailyLoads(athleteId: string, timeZone: string) {
+export async function recomputeTrainingState(athleteId: string, timeZone: string) {
   const admin = createAdminClient();
   const data = await fetchAllRows<ActivityLoadRow>((from, to) =>
     admin
@@ -140,44 +150,6 @@ export async function recomputeDailyLoads(athleteId: string, timeZone: string) {
       .order("started_at", { ascending: true })
       .range(from, to),
   );
-  const recovery = await fetchAllRows<RecoveryRow>((from, to) =>
-    admin
-      .from("daily_recovery")
-      .select("date, resting_hr, sleep_minutes, sleep_hrv_ms, stress_avg")
-      .eq("athlete_id", athleteId)
-      .order("date", { ascending: true })
-      .range(from, to),
-  );
-  const recoveryByDate = new Map(
-    recovery.map((row) => [
-      row.date,
-      {
-        resting_hr: row.resting_hr,
-        sleep_minutes: row.sleep_minutes,
-        hrv_ms: row.sleep_hrv_ms ?? row.hrv_ms ?? null,
-        stress: row.stress_avg ?? row.stress ?? null,
-      },
-    ]),
-  );
-  if (recoveryByDate.size === 0) {
-    const wellness = await fetchAllRows<RecoveryRow>((from, to) =>
-      admin
-        .from("wellness_days")
-        .select("date, resting_hr, sleep_minutes, hrv_ms, stress")
-        .eq("athlete_id", athleteId)
-        .order("date", { ascending: true })
-        .range(from, to),
-    );
-    for (const row of wellness) {
-      recoveryByDate.set(row.date, {
-        resting_hr: row.resting_hr,
-        sleep_minutes: row.sleep_minutes,
-        hrv_ms: row.hrv_ms ?? null,
-        stress: row.stress ?? null,
-      });
-    }
-  }
-
   const byDate = new Map<string, DayLoad>();
   for (const row of data) {
     const key = dateKeyInZone(new Date(row.started_at), timeZone);
@@ -232,7 +204,7 @@ export async function recomputeDailyLoads(athleteId: string, timeZone: string) {
       cyclingZ5Hours: mix.cyclingHigh / 3600,
       otherAerobicHours: mix.otherAerobic / 3600,
       load: mix.load,
-      recoveryDelta: recoveryDelta(key, recoveryByDate, addDaysToKey),
+      recoveryDelta: 0,
     });
   }
 
@@ -298,4 +270,181 @@ export async function recomputeDailyLoads(athleteId: string, timeZone: string) {
     }
   }
   return rows.length;
+}
+
+async function loadRecoveryByDate(athleteId: string) {
+  const admin = createAdminClient();
+  const recovery = await fetchAllRows<RecoveryRow>((from, to) =>
+    admin
+      .from("daily_recovery")
+      .select("date, resting_hr, sleep_minutes, sleep_hrv_ms, stress_avg")
+      .eq("athlete_id", athleteId)
+      .order("date", { ascending: true })
+      .range(from, to),
+  );
+  const recoveryByDate = new Map(
+    recovery.map((row) => [
+      row.date,
+      {
+        resting_hr: row.resting_hr,
+        sleep_minutes: row.sleep_minutes,
+        hrv_ms: row.sleep_hrv_ms ?? row.hrv_ms ?? null,
+        stress: row.stress_avg ?? row.stress ?? null,
+      },
+    ]),
+  );
+  if (recoveryByDate.size === 0) {
+    const wellness = await fetchAllRows<RecoveryRow>((from, to) =>
+      admin
+        .from("wellness_days")
+        .select("date, resting_hr, sleep_minutes, hrv_ms, stress")
+        .eq("athlete_id", athleteId)
+        .order("date", { ascending: true })
+        .range(from, to),
+    );
+    for (const row of wellness) {
+      recoveryByDate.set(row.date, {
+        resting_hr: row.resting_hr,
+        sleep_minutes: row.sleep_minutes,
+        hrv_ms: row.hrv_ms ?? null,
+        stress: row.stress ?? null,
+      });
+    }
+  }
+  return recoveryByDate;
+}
+
+/**
+ * Refresh Strain and Performance from canonical recovery. Does not rewrite
+ * Fitness, Fatigue, Form, aerobic capacity, or specific capacity.
+ */
+export async function recomputePerformanceState(
+  athleteId: string,
+  timeZone: string,
+  fromDate?: string,
+) {
+  const admin = createAdminClient();
+  const today = dateKeyInZone(new Date(), timeZone);
+  const rows = await fetchAllRows<{
+    date: string;
+    training_load: number | null;
+    aerobic_reserve: number | null;
+    specific_capacity: number | null;
+    potential: number | null;
+    acute_fatigue: number | null;
+  }>((from, to) =>
+    admin
+      .from("daily_loads")
+      .select("date, training_load, aerobic_reserve, specific_capacity, potential, acute_fatigue")
+      .eq("athlete_id", athleteId)
+      .neq("status", "forecast")
+      .lte("date", today)
+      .order("date", { ascending: true })
+      .range(from, to),
+  );
+  if (rows.length === 0) {
+    return 0;
+  }
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("potential_calibration")
+    .eq("id", athleteId)
+    .maybeSingle();
+  const calibration = isPotentialCalibration(profile?.potential_calibration)
+    ? profile.potential_calibration
+    : null;
+  if (!calibration) {
+    return 0;
+  }
+  const recoveryByDate = await loadRecoveryByDate(athleteId);
+  let acute: number | null = null;
+  let acc: number | null = null;
+  let updated = 0;
+  for (const row of rows) {
+    const load = row.training_load ?? 0;
+    acute = ewmaStep(acute, load, ACUTE_TAU);
+    acc = ewmaStep(acc, load, ACCUSTOMED_TAU);
+    if (fromDate && row.date < fromDate) {
+      continue;
+    }
+    const loadStrain = strainScore(acute, acc);
+    const delta = recoveryDelta(row.date, recoveryByDate, addDaysToKey);
+    const next = applyRecoveryToPerformance({
+      aerobicReserve: row.aerobic_reserve ?? 0,
+      specificCapacity: row.specific_capacity ?? 0,
+      loadStrain,
+      recoveryDelta: delta,
+      calibration,
+    });
+    const acuteFatigue = round1(next.acute_fatigue);
+    const potential = round1(next.potential);
+    if (row.acute_fatigue === acuteFatigue && row.potential === potential) {
+      continue;
+    }
+    const { error } = await admin
+      .from("daily_loads")
+      .update({
+        acute_fatigue: acuteFatigue,
+        potential,
+      })
+      .eq("athlete_id", athleteId)
+      .eq("date", row.date);
+    if (error) {
+      throw error;
+    }
+    updated += 1;
+  }
+  return updated;
+}
+
+export async function recomputeDailyLoads(athleteId: string, timeZone: string) {
+  const days = await recomputeTrainingState(athleteId, timeZone);
+  if (days > 0) {
+    await recomputePerformanceState(athleteId, timeZone);
+  }
+  return days;
+}
+
+/** recordedLoad = 0 means no file yet, not a confirmed rest day. */
+export async function advanceTrainingStateToDate(
+  athleteId: string,
+  timeZone: string,
+  targetDate?: string,
+) {
+  const today = targetDate ?? dateKeyInZone(new Date(), timeZone);
+  const admin = createAdminClient();
+  const { data: last } = await admin
+    .from("daily_loads")
+    .select("date")
+    .eq("athlete_id", athleteId)
+    .neq("status", "forecast")
+    .lte("date", today)
+    .order("date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (last?.date && last.date >= today) {
+    return { advanced: 0, last: last.date };
+  }
+  const days = await recomputeTrainingState(athleteId, timeZone);
+  const fromDate = last?.date ? addDaysToKey(last.date, 1) : undefined;
+  if (days > 0) {
+    await recomputePerformanceState(athleteId, timeZone, fromDate);
+  }
+  return { advanced: days, last: last?.date ?? null };
+}
+
+export async function advanceAllAthleteTrainingState() {
+  const admin = createAdminClient();
+  const profiles = await fetchAllRows<{ id: string; timezone: string }>((from, to) =>
+    admin.from("profiles").select("id, timezone").range(from, to),
+  );
+  const results: Array<{ athleteId: string; advanced: number }> = [];
+  for (const profile of profiles) {
+    const next = await advanceTrainingStateToDate(
+      profile.id,
+      profile.timezone || "Europe/London",
+    );
+    results.push({ athleteId: profile.id, advanced: next.advanced });
+  }
+  return results;
 }

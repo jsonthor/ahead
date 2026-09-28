@@ -242,6 +242,25 @@ export function buildCalibration(
   };
 }
 
+export function applyRecoveryToPerformance(input: {
+  aerobicReserve: number;
+  specificCapacity: number;
+  loadStrain: number;
+  recoveryDelta: number;
+  calibration: PotentialCalibration;
+}) {
+  const acute_fatigue = clamp(input.loadStrain + input.recoveryDelta);
+  const capacity = capacityOf(input.aerobicReserve, input.specificCapacity);
+  return {
+    acute_fatigue,
+    potential: scoreDisplayedPotential(
+      rawPotentialOf(capacity, acute_fatigue),
+      input.calibration.potential_low,
+      input.calibration.potential_high,
+    ),
+  };
+}
+
 function scoreDay(
   date: string,
   aerobicRaw: number,
@@ -392,6 +411,7 @@ export type RecoveryObservation = {
   stress: number | null;
 };
 
+/** Missing observations contribute nothing. They are not a negative recovery. */
 export function recoveryDelta(
   date: string,
   byDate: Map<string, RecoveryObservation>,

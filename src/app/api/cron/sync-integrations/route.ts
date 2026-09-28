@@ -1,5 +1,6 @@
 import { syncAllConnectedCoros } from "@/lib/coros/auto-sync";
 import { syncAllConnectedGoogleHealth } from "@/lib/google-health/auto-sync";
+import { advanceAllAthleteTrainingState } from "@/lib/load/banister";
 import { SITE_URL } from "@/lib/site";
 
 export const maxDuration = 300;
@@ -24,7 +25,8 @@ export async function GET(request: Request) {
       syncAllConnectedCoros(SITE_URL),
       syncAllConnectedGoogleHealth(),
     ]);
-    return Response.json({ ok: true, coros, googleHealth });
+    const training = await advanceAllAthleteTrainingState();
+    return Response.json({ ok: true, coros, googleHealth, training });
   } catch (error) {
     console.error("Scheduled integration sync failed", error);
     return Response.json(

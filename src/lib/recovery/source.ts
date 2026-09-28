@@ -8,6 +8,7 @@ import {
   type RecoverySourcePayload,
   type RecoverySourcePriority,
 } from "@/lib/recovery/priority";
+import { recomputePerformanceState } from "@/lib/load/banister";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export {
@@ -345,7 +346,19 @@ export async function recastRecoveryHistory(athleteId: string) {
   if (error) {
     throw new Error(error.message);
   }
-  const dates = [...new Set((data ?? []).map((row) => row.date))];
+  const dates = [...new Set((data ?? []).map((row) => row.date))].sort();
   await resolveDailyRecoveryRange(athleteId, dates, { recast: true });
+  if (dates[0]) {
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("timezone")
+      .eq("id", athleteId)
+      .maybeSingle();
+    await recomputePerformanceState(
+      athleteId,
+      profile?.timezone || "Europe/London",
+      dates[0],
+    );
+  }
   return dates.length;
 }

@@ -10,6 +10,7 @@ import {
   resolveDailyRecovery,
   saveRecoveryObservation,
 } from "@/lib/recovery/source";
+import { recomputePerformanceState } from "@/lib/load/banister";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export {
@@ -598,6 +599,14 @@ export async function syncCorosRecovery(input: {
       },
       { onConflict: "athlete_id,date" },
     );
+  }
+
+  if (earliestChanged) {
+    try {
+      await recomputePerformanceState(input.athleteId, timezone, earliestChanged);
+    } catch (error) {
+      console.error("COROS recovery performance recompute failed", error);
+    }
   }
 
   const withHrv = [...days.values()].filter((day) => day.sleep_hrv_ms != null).length;
