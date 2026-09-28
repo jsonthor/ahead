@@ -1,6 +1,6 @@
 import { dateKeyInZone } from "@/lib/calendar";
 import { GoogleHealthAuthError } from "@/lib/google-health/client";
-import { backfillWindow, fetchGoogleRecovery } from "@/lib/google-health/map-recovery";
+import { recoveryWindow, fetchGoogleRecovery } from "@/lib/google-health/map-recovery";
 import { GOOGLE_HEALTH_PROVIDER } from "@/lib/google-health/types";
 import type { ImportProgress } from "@/lib/coros/progress";
 import {
@@ -17,16 +17,28 @@ export async function syncGoogleHealthRecovery(input: {
 }) {
   const timezone = input.timeZone || "Europe/London";
   const today = dateKeyInZone(new Date(), timezone);
-  const { from, toExclusive } = backfillWindow(today);
-  input.onProgress?.({
-    phase: "wellness",
-    message: "Getting overnight recovery from Google Health…",
-    processed: 0,
-    total: 0,
-    saved: 0,
-  });
-
-  const days = await fetchGoogleRecovery(input.athleteId, from, toExclusive);
+  const admin = createAdminClient();
+  const { data: integration } = await admin
+    .from("integrations")
+    .select("last_sync_at")
+    .eq("athlete_id", input.athleteId)
+    .eq("provider", GOOGLE_HEALTH_PROVIDER)
+    .maybeSingle();
+  const { from, toExclusive } = recoveryWindow(today, integration?.last_sync_at);
+  const days = await fetchGoogleRecovery(
+    input.athleteId,
+    from,
+    toExclusive,
+    (message) => {
+      input.onProgress?.({
+        phase: "wellness",
+        message,
+        processed: 0,
+        total: 0,
+        saved: 0,
+      });
+    },
+  );
   const dates = [...days.keys()].sort();
   let saved = 0;
   for (const date of dates) {
@@ -65,7 +77,6 @@ export async function syncGoogleHealthRecovery(input: {
     }
   }
 
-  const admin = createAdminClient();
   const finished = new Date().toISOString();
   await admin
     .from("integrations")

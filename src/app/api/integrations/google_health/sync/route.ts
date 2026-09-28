@@ -33,13 +33,6 @@ export async function POST() {
         controller.enqueue(encoder.encode(encodeLine(progress)));
       };
       try {
-        send({
-          phase: "wellness",
-          message: "Connecting to Google Health…",
-          processed: 0,
-          total: 0,
-          saved: 0,
-        });
         await syncGoogleHealthRecovery({
           athleteId: user.id,
           timeZone: profile?.timezone ?? undefined,

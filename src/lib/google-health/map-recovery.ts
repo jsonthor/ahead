@@ -3,7 +3,6 @@ import {
   asObject,
   dateFilter,
   listDataPoints,
-  reconcileDataPoints,
   sleepEndFilter,
 } from "@/lib/google-health/client";
 import type { RecoverySourcePayload } from "@/lib/recovery/source";
@@ -165,9 +164,11 @@ export async function fetchGoogleRecovery(
   athleteId: string,
   from: string,
   toExclusive: string,
+  onProgress?: (message: string) => void,
 ) {
   const days = new Map<string, RecoverySourcePayload>();
-  const sleepPoints = await reconcileDataPoints(
+  onProgress?.("Getting overnight sleep from Google Health…");
+  const sleepPoints = await listDataPoints(
     athleteId,
     GOOGLE_DATA_TYPES.sleep,
     sleepEndFilter(from, toExclusive),
@@ -191,12 +192,14 @@ export async function fetchGoogleRecovery(
   const vitals: Array<{
     type: string;
     filter: string;
+    label: string;
     apply: (point: Record<string, unknown>) => RecoverySourcePayload | null;
   }> = [
     {
       type: GOOGLE_DATA_TYPES.hrv,
       filter: "daily_heart_rate_variability",
-    apply: (point) => {
+      label: "HRV",
+      apply: (point) => {
         const row =
           asObject(point.dailyHeartRateVariability) ??
           asObject(point.daily_heart_rate_variability);
@@ -210,6 +213,7 @@ export async function fetchGoogleRecovery(
     {
       type: GOOGLE_DATA_TYPES.restingHr,
       filter: "daily_resting_heart_rate",
+      label: "resting heart rate",
       apply: (point) => {
         const row =
           asObject(point.dailyRestingHeartRate) ?? asObject(point.daily_resting_heart_rate);
@@ -220,6 +224,7 @@ export async function fetchGoogleRecovery(
     {
       type: GOOGLE_DATA_TYPES.respiratoryRate,
       filter: "daily_respiratory_rate",
+      label: "respiratory rate",
       apply: (point) => {
         const row =
           asObject(point.dailyRespiratoryRate) ?? asObject(point.daily_respiratory_rate);
@@ -230,6 +235,7 @@ export async function fetchGoogleRecovery(
     {
       type: GOOGLE_DATA_TYPES.oxygenSaturation,
       filter: "daily_oxygen_saturation",
+      label: "oxygen saturation",
       apply: (point) => {
         const row =
           asObject(point.dailyOxygenSaturation) ?? asObject(point.daily_oxygen_saturation);
@@ -240,6 +246,7 @@ export async function fetchGoogleRecovery(
     {
       type: GOOGLE_DATA_TYPES.sleepTemperature,
       filter: "daily_sleep_temperature_derivations",
+      label: "sleep temperature",
       apply: (point) => {
         const row =
           asObject(point.dailySleepTemperatureDerivations) ??
@@ -265,6 +272,7 @@ export async function fetchGoogleRecovery(
   ];
 
   for (const vital of vitals) {
+    onProgress?.(`Getting ${vital.label} from Google Health…`);
     const points = await listDataPoints(
       athleteId,
       vital.type,
@@ -297,9 +305,10 @@ export async function fetchGoogleRecovery(
   return days;
 }
 
-export function backfillWindow(today: string) {
-  return {
-    from: addDaysToKey(today, -90),
-    toExclusive: addDaysToKey(today, 1),
-  };
+export function recoveryWindow(today: string, lastSyncAt?: string | null) {
+  const toExclusive = addDaysToKey(today, 1);
+  if (lastSyncAt) {
+    return { from: addDaysToKey(today, -3), toExclusive };
+  }
+  return { from: addDaysToKey(today, -90), toExclusive };
 }

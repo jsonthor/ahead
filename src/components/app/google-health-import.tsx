@@ -1,9 +1,8 @@
 "use client";
 
 import { readImportProgress, type ImportProgress } from "@/lib/coros/progress";
-import { safeReturnPath } from "@/lib/oauth";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 const INITIAL: ImportProgress = {
   phase: "wellness",
@@ -13,71 +12,104 @@ const INITIAL: ImportProgress = {
   saved: 0,
 };
 
-export function GoogleHealthImport() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const returnPath = safeReturnPath(searchParams.get("return") ?? "/app/connect");
-  const [progress, setProgress] = useState<ImportProgress>(INITIAL);
-  const [failed, setFailed] = useState(false);
+type SharedSync = {
+  progress: ImportProgress;
+  listeners: Set<(progress: ImportProgress) => void>;
+  result: Promise<{ last: ImportProgress | null; failed: boolean; reauth: boolean }>;
+};
 
-  useEffect(() => {
-    let cancelled = false;
-    async function run() {
-      try {
-        const response = await fetch("/api/integrations/google_health/sync", {
-          method: "POST",
+let shared: SharedSync | null = null;
+
+function publish(next: ImportProgress) {
+  if (!shared) {
+    return;
+  }
+  shared.progress = next;
+  for (const listener of shared.listeners) {
+    listener(next);
+  }
+}
+
+function startSharedSync() {
+  if (shared) {
+    return shared;
+  }
+  const listeners = new Set<(progress: ImportProgress) => void>();
+  const result = (async () => {
+    try {
+      const response = await fetch("/api/integrations/google_health/sync", {
+        method: "POST",
+      });
+      if (response.status === 401) {
+        publish({
+          phase: "error",
+          message: "Sign in again, then connect Google Health from Connect.",
+          processed: 0,
+          total: 0,
+          saved: 0,
         });
-        if (response.status === 401) {
-          setProgress({
+        return { last: null, failed: true, reauth: false };
+      }
+      const last = await readImportProgress(response, publish);
+      if (!last || last.phase === "error") {
+        if (last?.reauth) {
+          publish({
             phase: "error",
-            message: "Sign in again, then connect Google Health from Connect.",
+            message: "Google Health needs permission again.",
             processed: 0,
             total: 0,
             saved: 0,
+            reauth: true,
           });
-          setFailed(true);
-          return;
         }
-        const last = await readImportProgress(response, (next) => {
-          if (!cancelled) {
-            setProgress(next);
-          }
-        });
-        if (cancelled) {
-          return;
-        }
-        if (!last || last.phase === "error") {
-          if (last?.reauth) {
-            setProgress({
-              phase: "error",
-              message: "Google Health needs permission again.",
-              processed: 0,
-              total: 0,
-              saved: 0,
-              reauth: true,
-            });
-          }
-          setFailed(true);
-          return;
-        }
-        if (last.phase === "done") {
-          const dest = new URL(returnPath, window.location.origin);
-          dest.searchParams.set("connected", "google_health");
-          dest.searchParams.set("imported", String(last.saved));
-          router.replace(`${dest.pathname}${dest.search}`);
-        }
-      } catch (error) {
-        console.error(error);
-        if (!cancelled) {
-          setFailed(true);
-        }
+        return { last, failed: true, reauth: Boolean(last?.reauth) };
       }
+      if (last.phase !== "done") {
+        return { last, failed: true, reauth: false };
+      }
+      return { last, failed: false, reauth: false };
+    } catch (error) {
+      console.error(error);
+      return { last: null, failed: true, reauth: false };
     }
-    void run();
+  })();
+  shared = { progress: INITIAL, listeners, result };
+  return shared;
+}
+
+export function GoogleHealthImport({ returnPath }: { returnPath: string }) {
+  const router = useRouter();
+  const returnPathRef = useRef(returnPath);
+  returnPathRef.current = returnPath;
+  const [progress, setProgress] = useState<ImportProgress>(
+    shared?.progress ?? INITIAL,
+  );
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    const sync = startSharedSync();
+    setProgress(sync.progress);
+    sync.listeners.add(setProgress);
+    void sync.result.then(({ last, failed: nextFailed }) => {
+      if (nextFailed) {
+        shared = null;
+        setFailed(true);
+        return;
+      }
+      if (!last) {
+        setFailed(true);
+        return;
+      }
+      shared = null;
+      const dest = new URL(returnPathRef.current, window.location.origin);
+      dest.searchParams.set("connected", "google_health");
+      dest.searchParams.set("imported", String(last.saved));
+      router.replace(`${dest.pathname}${dest.search}`);
+    });
     return () => {
-      cancelled = true;
+      sync.listeners.delete(setProgress);
     };
-  }, [returnPath, router]);
+  }, [router]);
 
   return (
     <main className="mx-auto flex min-h-full max-w-lg flex-col justify-center px-4 py-16 sm:px-6">

@@ -1,21 +1,17 @@
 import { GoogleHealthImport } from "@/components/app/google-health-import";
+import { safeReturnPath } from "@/lib/oauth";
 import type { Metadata } from "next";
-import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Google Health — Ahead",
 };
 
-export default function GoogleHealthConnectPage() {
-  return (
-    <Suspense
-      fallback={
-        <main className="mx-auto flex min-h-full max-w-lg flex-col justify-center px-4 py-16">
-          <p className="text-sm text-muted">Connecting to Google Health…</p>
-        </main>
-      }
-    >
-      <GoogleHealthImport />
-    </Suspense>
+export default async function GoogleHealthConnectPage({
+  searchParams,
+}: PageProps<"/connect/google_health">) {
+  const query = await searchParams;
+  const returnPath = safeReturnPath(
+    typeof query.return === "string" ? query.return : "/app/connect",
   );
+  return <GoogleHealthImport returnPath={returnPath} />;
 }
